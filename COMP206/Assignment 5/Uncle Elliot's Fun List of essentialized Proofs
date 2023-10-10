@@ -1,0 +1,21 @@
+\documentclass[11pt]{article}
+\usepackage{mathbbol}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{tikz}
+\begin{document}
+\noindent Elliot F. Poirier
+\hfill
+McGill University
+\\
+December 8th 2022
+\hfill
+Honours Analysis III
+\\
+\begin{center}
+\textbf{\Large{Uncle Elliot's fun list of Essentialized Proofs}}
+\end{center}
+\hfill
+\\
+
+\end{document}

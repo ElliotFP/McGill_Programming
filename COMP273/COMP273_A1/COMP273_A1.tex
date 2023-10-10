@@ -1,0 +1,129 @@
+\documentclass[11pt]{article}
+\usepackage{mathbbol}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\begin{document}
+\noindent Elliot F. Poirier
+\hfill
+McGill University
+\\
+January 19th 2022
+\hfill
+Intro to Computer Systems
+\\
+\begin{center}
+\textbf{\Large{Assignment 1}}
+\end{center}
+\hfill
+\\
+
+\noindent \textbf{\large{Section 1 : Number Representation, 2s Complement, and Floating Point}}
+\\
+
+\noindent \textbf{(1) } $0.101011_2$
+\begin{equation}
+    \begin{split}
+        0.101011_2 &= 0 \cdot 2^0 + 1 \cdot 2^{-1} + 0 \cdot 2^{-2} + 1 \cdot 2^{-3} + 0 \cdot 2^{-4} + 1 \cdot 2^{-5} + 1 \cdot 2^{-6}\\
+        &= \frac{1}{2} + \frac{1}{8} + \frac{1}{32} + \frac{1}{64}\\
+        &= 0.5 + 0.125 + 0.03125 + 0.015625 = 0.671875_{10}
+    \end{split}
+\end{equation}
+
+\noindent \textbf{(2) } $8.725_{10}$
+\begin{equation}
+    \begin{split}
+        \space 8.725_{10} &= 1 \cdot 2^3 + 0 \cdot 2^2 + 0 \cdot 2^1 + 0 \cdot 2^0 + 0.725_{10}\\
+        & = 1 \cdot 2^3 + 1 \cdot 2^{-1} + 0 \cdot 2^{-2} + 0.225_{10}\\
+        &= 1 \cdot 2^3 + 1 \cdot 2^{-1} + 1 \cdot 2^{-3} + 0.100_{10}\\
+        &= 1 \cdot 2^3 + 1 \cdot 2^{-1}  + 1 \cdot 2^{-3} + 1 \cdot 2^{-4} + 0.0375_{10}\\
+        & = 1000_2 + 1 \cdot 2^{-1} + 1 \cdot 2^{-3} + 1 \cdot 2^{-4} + 1 \cdot 2^{-5} + 0.000625_{10}\\
+        &= 1000_2 + 1 \cdot 2^{-1} + 1 \cdot 2^{-3} + 1 \cdot 2^{-4} + 1 \cdot 2^{-5} + 1 \cdot 2^{-8} + 1 \cdot 2^{-9} + 1 \cdot 2^{-12}\\
+        & + 1 \cdot 2^{-13} + 1 \cdot 2^{-16} + \cdots \\
+        &= 1000.1011100110011001_2\\
+        1000_2 &= 1 \cdot 2^3 = 8 \cdot 16^0 = 8_{16}\\
+        0.1011100110011001_2 &= 1 \cdot 2^{-1} + 1 \cdot 2^{-3} + 1 \cdot 2^{-4} + 1 \cdot 2^{-5} + 1 \cdot 2^{-8} + 1 \cdot 2^{-9} + 1 \cdot 2^{-12}\\
+        & + 1 \cdot 2^{-13} + 1 \cdot 2^{-16} + \cdots \\
+        &= \frac{8}{16} + \frac{2}{16} + \frac{1}{16} + \frac{8}{16^2} + \frac{1}{16^2} + \frac{8}{16^3} + \frac{1}{16^3} + \frac{8}{16^4} + \frac{1}{16^4}\\
+        &= 11 \cdot 16^{-1} + 9 \cdot 16^{-2} + 9 \cdot 16^{-3} + 9 \cdot 16^{-4}\\
+        &= \text{0.B999}_{16}\\
+        8.725_{10} &= 1000.1011100110011001_2 = \text{8.B999}_{16}
+    \end{split}
+\end{equation}
+
+\noindent $\textbf{(3) } \space 1\text{FA.U06G}_{32}$.
+\begin{equation}
+    \begin{split}
+    1\text{FA.U06G}_{32} &= 1 \cdot 32^2 + 15 \cdot 32^1 + 10 \cdot 32^0 + 30 \cdot 32^{-1} + 0 \cdot 32^{-2} + 6 \cdot 32^{-3} + 16 \cdot 32^{-4}\\ 
+    &= 1 \cdot (2^5)^2 + 15 \cdot (2^5)^1 + 10 \cdot (2^5)^0 + 30 \cdot (2^5)^{-1} + 0 \cdot (2^5)^{-2}\\
+    & + 6 \cdot (2^5)^{-3} + 16 \cdot (2^5)^{-4}\\ 
+    &= 1 \cdot 2^{10} + 15 \cdot 2^5 + 10 \cdot 2^0 + 30 \cdot 2^{-5} + 0 \cdot 2^{-10} + 6 \cdot 2^{-15} + 16 \cdot 2^{-20}\\ 
+    &= 1 \cdot 2^{10} + (14 + 1) \cdot 2^5 + (4 + 1) \cdot 2^1 + (14 + 1) \cdot 2^{-4} \\
+    & + (2 + 1) \cdot 2^{-14} + 1 \cdot 2^{-16}\\ 
+    &= 1 \cdot 2^{10} + 1 \cdot 2^8 + 1 \cdot 2^7 + 1 \cdot 2^6 + 1 \cdot 2^5 + 1 \cdot 2^3 + 1 \cdot 2^1 + 1 \cdot 2^{-1} + 1 \cdot 2^{-2}\\ 
+    & + 1 \cdot 2^{-3} + 1 \cdot 2^{-4} + 1 \cdot 2^{-13} + 1 \cdot 2^{-14} + 1 \cdot
+    2^{-16}\\ 
+    &= 10111101010.1111000000001101_2 \\
+    10111101010_2 &= 1 \cdot 2^{10} + 1 \cdot 2^8 + 1 \cdot 2^7 + 1 \cdot 2^6 + 1 \cdot 2^5 + 1 \cdot 2^3 + 1 \cdot 2^1\\
+    &= 2^2 \cdot 16^2 + 1 \cdot 16^2 + 2^3 \cdot 16^1 + 2^2 \cdot 16^1 + 2^1 \cdot 16^1 + 2^3 \cdot 16^0 + 2^1 \cdot 16^0\\
+    &= 5 \cdot 16^2 + 14 \cdot 16^1 + 10 \cdot 16^0 = \text{5EA}_{16}\\
+    0.1111000000001101_2 &= 1 \cdot \frac{1}{2^{1}} + 1 \cdot \frac{1}{2^{2}} + 1 \cdot \frac{1}{2^{3}} + 1 \cdot \frac{1}{2^{4}} + 1 \cdot \frac{1}{2^{13}} + 1 \cdot \frac{1}{2^{14}} + 1 \cdot
+    \frac{1}{2^{16}}\\
+    &= \frac{1}{2} + \frac{1}{4} + \frac{1}{8} + \frac{1}{16} + \frac{1}{2}  \cdot \frac{1}{16^3} + \frac{1}{4} \cdot \frac{1}{16^3} + 1 \cdot \frac{1}{16^4}\\
+    &= \frac{8}{16} + \frac{4}{16} + \frac{2}{16} + \frac{1}{16} + \frac{8}{16^4} + \frac{4}{16^4} + \frac{1}{16^4}\\
+    &= 15 \cdot 16^{-1} + 13 \cdot 16^{-4} = \text{F00D}_16 \\
+    1\text{FA.U06G}_{32} &= 10111101010.1111000000001101_2 = \text{5EA.F00D}_{16}
+    \end{split}
+\end{equation}
+
+\noindent \textbf{(4) } $\space 3231004_5$.
+\begin{equation}
+    \begin{split}
+        3231004_5 &= 3 \cdot 5^6 + 2 \cdot 5^5 + 3 \cdot 5^4 + 1 \cdot 5^3 + 4 \cdot 5^0\\
+        &= 46375 + 6250 + 1875 + 125 + 4 = 55129_{10}\\
+        &= 13 \cdot 16^{3} + 1881\\
+        &= 13 \cdot 16^{3} + 7 \cdot 16^{2} + 89\\
+        &= 13 \cdot 16^{3} + 7 \cdot 16^{2} + 5 \cdot 16^1 + 9 \cdot 16^0\\
+        &= D759_{16}
+    \end{split}
+\end{equation}
+\newpage
+
+\noindent \textbf{(5) } $-4128786_{10}$.
+
+\begin{equation}
+    \begin{split}
+        4128786_{10} &= 1 \cdot 2^{21} + 1 \cdot 2^{20} +  1 \cdot 2^{19} + 1 \cdot 2^{18} + 1 \cdot 2^{17} + 1  \cdot 2^{16} + 1 \cdot 2^4 + 1 \cdot 2^1 \\
+        &= 1111110000000000010010\\
+        & \Rightarrow 001111110000000000010010 \text{ (Add two zeros since}\\
+        & \text{ we want a 24 bit number)} \\ 
+        & \Rightarrow 110000001111111111101101 \text{ (Flip all the bits)} \\
+        &\Rightarrow 110000001111111111101110 \text{ (Add one)}\\
+        110000001111111111101110_2 &= 1 \cdot 2^{23} + 1 \cdot 2^{22} +1 \cdot 2^{15} + 1 \cdot 2^{14} + 1 \cdot 2^{13} + 1 \cdot 2^{12} + 1 \cdot 2^{11}\\
+        & + 1 \cdot 2^{10} + 1 \cdot 2^{9} + 1 \cdot 2^{8} + 1 \cdot 2^{7} + 1 \cdot 2^{6} + 1 \cdot 2^{5} + 1 \cdot 2^{3}+1 \cdot 2^{2}\\
+        & + 1 \cdot 2^{1}\\
+        &= (8+4) \cdot 16^5 + (8+4+2+1) \cdot 16^3 + (8+4+2+1) \cdot 16^2\\
+        & + (8+4+2) \cdot 16^1 + (8 + 4 + 2) \cdot 16^0\\
+        &= 12 \cdot 16^5 + 15 \cdot 16^3 + 15 \cdot 16^2 + 14 \cdot 16^1 + 14 \cdot 16^0\\
+        &= \text{C0FFEE}_{16}
+    \end{split}
+\end{equation}
+
+\noindent \textbf{(6) } $-25.625_{10}$
+\begin{equation}
+    \begin{split}
+        25.625_{10} &= 1 \cdot 2^4 + 1 \cdot 2^3 + 1 \cdot 2^0 + 1 \cdot 2^{-1} + 1 \cdot 2^{-2} \\
+        &= 11001.101_2 = 1.1001101 \cdot 2^{-4}\\
+        & \text{Sign is 1 since it is negative ; Exponent is } 4 + 127 = 131 \; ; \text{ Fraction is } 1000011 \cdots\\
+        -25.625_{10} &= 1 \: 10000011 \: 100110100000000000000000\\
+        & \Rightarrow 1 \cdot 2^{31} + 1 \cdot 2^{30} + 1 \cdot 2^{24} + 1 \cdot 2^{23} + 1 \cdot 2^{22} + 1 \cdot 2^{19} + 1 \cdot 2^{18} + 1 \cdot 2^{16}\\
+        &= 8 \cdot 16^7 + 4 \cdot 16^7 + 1 \cdot 16^6 + 8 \cdot 16^5 + 4 \cdot 16^5 + 8 \cdot 16^4 + 4 \cdot 16^4 + 1 \cdot 16^1\\
+        &= 12 \cdot 16^7 + 1 \cdot 16^6 + 12 \cdot 16^5 + 13 \cdot 16^4 = \text{C1CD000}_16\\
+        &\text{This representation is exact.} 
+    \end{split}
+\end{equation}
+\newpage
+
+\noindent \textbf{\large{Section 2 : Seven Segment Decoder}}
+\\
+
+\end{document}
