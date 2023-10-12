@@ -1,7 +1,0 @@
-a.out
-shell
-shell.c
-shell.dSYM
-test.txt
-test1.txt
-Child process has finished.

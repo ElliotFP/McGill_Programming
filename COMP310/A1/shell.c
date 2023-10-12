@@ -278,21 +278,68 @@ int main(void)
             // Child process
             if (pid == 0)
             {
+                // check for pipe
+                for (int i = 0; i < cnt; i++)
+                {
+                    if (strcmp(args[i], "|") == 0) // pipe found
+                    {
+                        // Create pipe
+                        int fd[2];
+                        pipe(fd);
+
+                        // Fork the process
+                        int pid = fork();
+
+                        if (pid == 0) // child
+                        {
+                            close(1);     // close stdout
+                            dup(fd[1]);   // redirect stdout to pipe write
+                            close(fd[0]); // close pipe read
+                            close(fd[1]); // close pipe write
+
+                            for (int j = i; j < cnt; j++) // Remove everything after pipe
+                                args[i] = NULL;
+
+                            execvp(args[0], args);
+                            perror("Command execution failed");
+                            exit(EXIT_FAILURE);
+                        }
+                        else // parent
+                        {
+                            close(0);     // close stdin
+                            dup(fd[0]);   // redirect stdin to pipe read
+                            close(fd[0]); // close pipe read
+                            close(fd[1]); // close pipe write
+
+                            // Remove everything before pipe
+                            for (int j = 0; j <= i; j++)
+                            {
+                                args[j] = args[j + i + 1];
+                            }
+                            for (int j = i; j < cnt; j++)
+                            {
+                                args[j] = NULL;
+                            }
+                            execvp(args[0], args);
+                            perror("Command execution failed");
+                            exit(EXIT_FAILURE);
+                        }
+                    }
+                }
+                // no pipe
                 execvp(args[0], args);
                 perror("Command execution failed");
                 exit(EXIT_FAILURE);
             }
             else
             {
-                if (bg)
+                if (bg) // run in background
                 {
                     addJob(pid, args[0]);
                 }
                 if (!bg)
                 {
-                    // Wait for the child process to finish
-                    wait(NULL);
-                    printf("Child process has finished.\n");
+                    wait(NULL); // wait for the child process to finish
                 }
             }
         }
