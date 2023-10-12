@@ -21,6 +21,7 @@ typedef struct Job
 
 Job *job_list = NULL; // global pointer to the job list
 int globalJobID = 0;  // global jobID counter
+char *outfile = NULL; // To store the output file name for redirection
 
 // Function to add a new job to the job list, it creates a new job and adds it to the front of the list
 void addJob(pid_t pid, const char *command)
@@ -130,11 +131,36 @@ int main(void)
 {
     char *args[20] = {NULL};
     int bg;
+    // Save stdin and out fd for the redirection to restore later
+    int stdin = dup(0);
+    int stdout = dup(1);
 
     while (1)
     {
+        // Reset background, arguments and stdin/out fd
         bg = 0;
+        for (int i = 0; i < 20; i++)
+            args[i] = NULL;
+        dup2(stdin, 0);
+        dup2(stdout, 1);
+
         int cnt = getcmd("\n>> ", args, &bg);
+
+        // Check for output redirection
+        for (int i = 0; i < cnt; i++)
+        {
+            if (strcmp(args[i], ">") == 0)
+            {
+                close(1);                                        // close stdout
+                int fd = open(args[i + 1], O_WRONLY | O_APPEND); // redirect stdout to the file
+
+                // Remove > and filename from args
+                args[i] = NULL;
+                args[i + 1] = NULL;
+                cnt -= 2;
+                break;
+            }
+        }
 
         if (args[0] == NULL)
         {
@@ -253,6 +279,8 @@ int main(void)
             if (pid == 0)
             {
                 execvp(args[0], args);
+                perror("Command execution failed");
+                exit(EXIT_FAILURE);
             }
             else
             {
