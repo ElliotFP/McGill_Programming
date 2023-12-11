@@ -1,0 +1,10 @@
+Documentation
+
+disk_data_structures.c File
+
+void b_set(Bitmap *b, int i); 
+Divide index by 8 to find the corresponding byte, then AND with 7 (00000111, ignore all the other bits) and i to find corresponding index within byte. Shift register by that amount and perform OR assignment to set bit to 1 and keep all other bits the same.
+
+void b_clear(Bitmap *b, int i);
+Similar to b_set, but we take the complement of the index register (all 1s except the index) and AND with the register to set the bit to 0.
+
