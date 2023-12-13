@@ -64,7 +64,13 @@ int b_getfreebit(Bitmap *b) // Get the index of the first free bit
 
 superblock *s_init() // Initialize the superblock
 {
-    superblock *s;
+    printf("Initializing superblock\n");
+    superblock *s = (superblock *)malloc(sizeof(superblock));
+    if (s == NULL)
+    {
+        printf("Error allocating memory for superblock\n");
+        return NULL;
+    }
 
     // Allocate fields from constants.h
     s->magic = SB_MAGIC_;
@@ -72,6 +78,7 @@ superblock *s_init() // Initialize the superblock
     s->fsSize = NUM_BLOCKS_;
     s->itablelength = NUM_INODES_;
     s->rtdir = 0;
+    printf("Superblock initialized\n");
 
     return s; // Return the superblock pointer
 }
@@ -82,20 +89,22 @@ icache *ic; // declare inode cache pointer
 
 icache *i_initCache() // initialize inode cache
 {
-    int x; // iterator
+    printf("Initializing inode cache\n");
+    ic = (icache *)malloc(sizeof(icache)); // allocate memory for inode cache
+    int x;                                 // iterator
 
     for (x = 1; x < MAX_FILES_; x++) // iterate over all inodes
     {
         ic->i[x].active = 0;
         ic->i[x].size = 0;
     }
-
     ic->iFree = b_init(NUM_INODES_); // initialize bitmap
 
     // setup directory inode
     b_set(ic->iFree, 0);
     ic->i[0].active = 1;
 
+    printf("Inode cache initialized\n");
     return ic; // return inode cache pointer
 }
 
@@ -107,6 +116,7 @@ icache *i_getIcache() // get inode cache pointer
 icache *i_setIcache(icache *tmp) // set inode cache pointer
 {
     ic = tmp;
+    return ic;
 }
 
 int i_newEntry() // create a new inode entry
@@ -179,9 +189,9 @@ void FDB_setbit(int i) // set bit at index i to 1
 {
     b_set(fd->dbFree, i);
 }
-void FDB_unsetbit(int i) // set bit at index i to 0
+void FDB_clearbit(int i) // set bit at index i to 0
 {
-    b_unset(fd->dbFree, i);
+    b_clear(fd->dbFree, i);
 }
 int FDB_getbit(int i) // get bit at index i
 {
@@ -195,20 +205,152 @@ int FDB_getfreeblock() // get index of first free bit
 
 FDB *FDB_init() // initialize free data block structure
 {
-    fd->dbFree = *b_init(NUM_BLOCKS_);
+    printf("Initializing free data block\n");
+    FDB *fd = (FDB *)malloc(sizeof(FDB));
+    if (fd == NULL)
+    {
+        printf("Error allocating memory for free data block\n");
+        return NULL;
+    }
 
+    fd->dbFree = b_init(FBM_BLOCK_); // initialize bitmap
     // block off super block
-    FDB_setbit(SB_BLOCK_);
-    int x;
+    if (fd->dbFree == NULL)
+    {
+        printf("Error allocating memory for free data block bitmap\n");
+        return NULL;
+    }
 
+    // b_set(&fd->dbFree, SB_BLOCK_);
+    int x;
     // block off inode table
     for (x = ICACHE_BLOCK_START_; x < ICACHE_BLOCK_END_ + 1; x++)
     {
-        FDB_setbit(x);
+        b_set(fd->dbFree, x);
     }
 
     // block off free data block map
-    FDB_setbit(FDB_BLOCK_);
+    // b_set(&fd->dbFree, FDB_BLOCK_);
+    printf("Free data block initialized\n");
 
     return fd; // return free data block pointer
+}
+
+/* Directory Table */
+
+directory *d;        // Global pointer to Directory Table
+int dirIterIndx = 0; // Index for iterating through the directory
+
+void d_setDir(directory *tmp) // Set the directory structure
+{
+    d = tmp;
+}
+
+directory *d_getDir() // Retrieve the directory structure
+{
+    return d;
+}
+
+directory *d_initDir() // Initialize the directory structure
+{
+    printf("Initializing directory\n");
+    int x;
+    d = (directory *)malloc(sizeof(directory)); // Allocate memory for the directory
+
+    d->numEntry = 0; // Reset the number of entries in the directory
+
+    for (x = 0; x < MAX_FILES_; x++) // Initialize each directory entry
+    {
+        d->list[x].active = 0; // Mark each directory entry as inactive
+    }
+    dirIterIndx = 0; // Reset directory iteration index
+    return d;
+}
+
+int d_addEntry(int id, char *name) // Add a new entry to the directory
+{
+    if (d->numEntry >= MAX_FILES_) // Check if directory is full
+    {
+        return -1; // Return error if directory is full
+    }
+    // Add new entry
+    d->list[d->numEntry].active = 1;          // Mark entry as active
+    d->list[d->numEntry].inode = id;          // Set inode number
+    strcpy(d->list[d->numEntry].fname, name); // Copy file name
+    d->numEntry++;                            // Increment number of entries
+    return 0;                                 // Success
+}
+
+void resetDirIter() // Reset the directory iterator
+{
+    dirIterIndx = 0;
+}
+
+int d_getNextDirName(char *namebuf) // Get the name of the next directory entry
+{
+    if (dirIterIndx >= MAX_FILES_) // Check if iterator has reached the end
+    {
+        resetDirIter(); // Reset iterator
+        return -1;      // Return error
+    }
+    else if (d->list[dirIterIndx].active) // Check if current entry is active
+    {
+        strcpy(namebuf, d->list[dirIterIndx].fname); // Copy file name
+        return dirIterIndx++;                        // Return index and increment iterator
+    }
+    return -1; // Return error if current entry is not active
+}
+
+int d_name2Index(char *namebuf) // Convert directory name to its index
+{
+    char *tmp;
+    int inx = -1;
+    resetDirIter();
+    while ((inx = d_getNextDirName(tmp)) != -1)
+    {
+        if (strcmp(tmp, namebuf) == 0) // Compare names
+        {
+            return inx; // Return index if names match
+        }
+    }
+    return -1; // Return error if name not found
+}
+
+int d_getActive(int index) // Check if a directory entry is active
+{
+    return d->list[index].active;
+}
+
+int d_getInode(int index) // Get the inode number of a directory entry
+{
+    return d->list[index].inode; // Return inode number
+}
+
+char *d_getName(int index) // Get the name of a directory entry
+{
+    return d->list[index].fname; // Return pointer to file name
+}
+
+int d_removeEntry(int index) // Remove a directory entry
+{
+    if (d_getActive(index) == 0) // Check if entry is active
+        return -1;
+
+    d->numEntry--;
+    int x;
+
+    for (x = index; x < d->numEntry; x++) // iterate through all entries after the one to be removed
+    {
+        if (d_getActive(x + 1) == 0) // if the next entry is inactive, break
+        {
+            d->list[x].active = 0; // mark the current entry as inactive
+            break;
+        }
+        else
+        {
+            strcpy(d->list[x].fname, d_getName(x + 1)); // copy the next entry's name to the current entry
+            d->list[x].inode = d_getInode(x + 1);
+        }
+    }
+    return 0;
 }

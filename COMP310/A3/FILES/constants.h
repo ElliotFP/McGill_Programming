@@ -5,10 +5,17 @@
 /* Super Block */
 #define BLOCKSIZE_ 1024      // large block size means one structure per block
 #define SB_MAGIC_ 0xACBD0005 // magic number for superblock
+#define SB_BLOCK_ 0          // address of superblock
 
-#define NUM_BLOCKS_ BLOCKSIZE_ * 7 // free data block bitmap restriction (max is more but playing it it safe)
-#define NUM_INODES_ 101
-#define MAX_FILES_ 100
+/* I-node Table*/
+#define ICACHE_BLOCK_START_ 1
+#define ICACHE_BLOCK_END_ 31
+#define ICACHE_NUM_BLOCKS ICACHE_BLOCK_END_ - ICACHE_BLOCK_START_ + 1
+#define NUM_INODES_ 97 // 101 inodes means 7 blocks in the inode table
+
+#define NUM_BLOCKS_ BLOCKSIZE_ * 6 // free data block bitmap restriction (max is more but playing it it safe)
+
+#define MAX_FILES_ 96 // 96 files max
 #define MAX_FILE_NAME_ 16
 #define MAX_FILE_EXT_ 3
 #define DIR_INODE_ 100
@@ -22,13 +29,9 @@
 #define MAX_DIR_SIZE_ 4096 //(MAX_FILE_NAME_+MAX_FILE_EXT_+10) * MAX_FILES_ + 4 raised to next power of 2
 #define DIR_BLOCKCOUNT_ MAX_DIR_SIZE_ / BLOCKSIZE_
 
-#define SB_BLOCK_ 0
-#define ICACHE_BLOCK_START_ 1
-#define ICACHE_BLOCK_END_ 31
-#define ICACHE_NUM_BLOCKS ICACHE_BLOCK_END_ - ICACHE_BLOCK_START_ + 1
-#define FDB_BLOCK_ 32
-#define FIRST_DATABLOCK_ 33
-#define LAST_DATABLOCK_ 3583
+#define FBM_BLOCK_ 32                                   // free data block bitmap block address
+#define FIRST_DATABLOCK_ 33                             // first data block address
+#define LAST_DATABLOCK_ 3583                            // last data block address
 #define DATA_BLOCKS_AVAIL_ LAST_DATABLOCK_ - FBM_BLOCK_ // 3551
 
 #include <stdlib.h>
