@@ -16,7 +16,7 @@ struct file_descriptor_table_entry
 
 struct file_descriptor_table
 {
-    FTDentry f[MAX_FILES_]; // Array of file descriptor table entries
+    FTDentry f[NUM_INODES_ - 1]; // Array of file descriptor table entries
 } typedef FDT;
 
 void f_activate(int inode);             // Activate a file descriptor

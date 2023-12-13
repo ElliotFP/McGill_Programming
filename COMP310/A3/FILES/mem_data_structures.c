@@ -12,7 +12,7 @@ FDT *ft; // Global pointer to File Descriptor Table
 void f_init() // Initialize the file descriptor table
 {
     int x;
-    for (x = 0; x < MAX_FILES_; x++) // Iterate over all possible file descriptors
+    for (x = 0; x < NUM_INODES_ - 1; x++) // Iterate over all possible file descriptors
     {
         ft->f[x].rw = 0;     // Initialize Read/Write pointer to 0
         ft->f[x].active = 0; // Mark the file descriptor as inactive

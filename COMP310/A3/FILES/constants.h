@@ -14,9 +14,10 @@
 #define ICACHE_NUM_BLOCKS ICACHE_BLOCK_END_ - ICACHE_BLOCK_START_ + 1
 #define NUM_INODES_ 256 // 101 inodes means 7 blocks in the inode table
 
+/* Free Data Block Bitmap */
 #define FBM_BLOCK_ 1023 // free data block bitmap block address
 
-#define MAX_FILES_ 255 // 96 files max
+/* Directory */
 #define MAX_FILE_NAME_ 16
 #define MAX_FILE_EXT_ 3
 #define DIR_INODE_ 100
@@ -31,9 +32,9 @@
 #define DIR_BLOCKCOUNT_ MAX_DIR_SIZE_ / BLOCKSIZE_
 
 /* Data Blocks */
-#define FIRST_DATABLOCK_ 32                             // first data block address
-#define LAST_DATABLOCK_ 1022                            // last data block address
-#define DATA_BLOCKS_AVAIL_ LAST_DATABLOCK_ - FBM_BLOCK_ // 3551
+#define FIRST_DATABLOCK_ 32                                   // first data block address
+#define LAST_DATABLOCK_ 1022                                  // last data block address
+#define DATA_BLOCKS_AVAIL_ LAST_DATABLOCK_ - FIRST_DATABLOCK_ // 992
 
 #include <stdlib.h>
 #include <string.h>

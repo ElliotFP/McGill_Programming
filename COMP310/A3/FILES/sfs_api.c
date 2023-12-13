@@ -5,8 +5,7 @@
 #include "disk_emu.h"
 #include "sfs_api.h"
 #include "constants.h"
-#include "mem_data_structures.h"
-#include "disk_data_structures.h"
+#include "structures.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -18,7 +17,7 @@ char sfs_disk_name[] = "BananaDisk.disk";
 // int icacheBlocknums[ICACHE_NUM_BLOCKS];
 icache *ic;
 superblock *sb;
-FDB *fd;
+Bitmap *fbm;
 directory *dir;
 FDT *ft;
 
@@ -26,31 +25,6 @@ FDT *ft;
 /* mksfs() */
 /* ------- */
 /* This function creates a new file system or loads an existing one */
-
-void init_icache()
-{
-    // initialize icache
-    int x;
-    ic = i_initCache();
-
-    // allocate memory for icache
-    char *buffer = (char *)malloc(sizeof(ic));
-    memcpy(buffer, ic, sizeof(*ic));
-
-    // write icache to disk
-    write_blocks(ICACHE_BLOCK_START_, ICACHE_NUM_BLOCKS, buffer);
-    free(buffer);
-}
-
-// void init_freebitmap()
-// {
-//     // initialize free data blocks
-//     fd = FDB_init();
-//     char *buffer = (char *)malloc(sizeof(fd));
-//     memcpy(buffer, fd, sizeof(fd));
-//     write_blocks(FDB_BLOCK_, 1, buffer);
-//     free(buffer);
-// }
 
 void mksfs(int fresh)
 {
@@ -67,13 +41,13 @@ void mksfs(int fresh)
         //  Initialize all disk data structures
         write_blocks(SB_BLOCK_, 1, s_init()); // write superblock to disk
 
-        // initialize free data blocks
-        fd = FDB_init();
-        write_blocks(FBM_BLOCK_, 1, FDB_init()); // write free data block free bitmap to disk
+        ic = i_initCache(); // initialize inode cache
+        write_blocks(ICACHE_BLOCK_START_, ICACHE_NUM_BLOCKS, ic);
 
-        init_icache();
-        // init_freebitmap();
-        dir = d_initDir();
+        fbm = b_init(DATA_BLOCKS_AVAIL_); // initialize free data block free bitmap
+        write_blocks(FBM_BLOCK_, 1, fbm);
+
+        dir = get_dir(); // get pointer to directory
     }
     else // load existing file system
     {
@@ -83,6 +57,9 @@ void mksfs(int fresh)
             printf("Error initializing disk\n");
             return;
         }
+        ic = get_icache(); // get pointer to inode cache
+        fbm = getBitmap(); // get pointer to free data block bitmap
+        dir = get_dir();   // get pointer to directory
     }
 }
 
@@ -111,8 +88,11 @@ int sfs_getfilesize(const char *p)
 /* ----------- */
 /* This function opens a file */
 
-int sfs_fopen(char *p)
+int sfs_fopen(char *name)
 {
+    // check if file exists
+    int i;
+
     return 0;
 }
 

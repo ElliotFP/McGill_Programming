@@ -30,6 +30,7 @@ typedef struct
 	int lastfreebit;			  // Index of the last free bit found in the bitmap
 } Bitmap;
 
+Bitmap *getBitmap();			// Get the free data block bitmap
 void b_set(Bitmap *b, int i);	// Set the bit at index 'i' to 1
 void b_clear(Bitmap *b, int i); // Set the bit at index 'i' to 0
 int b_getbit(Bitmap *b, int i); // Get the value of the bit at index 'i'
@@ -50,6 +51,7 @@ typedef struct
 	inode i[NUM_INODES_]; // Array of inodes
 } icache;
 
+icache *get_icache();  // Get the inode cache
 icache *i_initCache(); // Initialize inode cache
 
 /* Directory Table */
