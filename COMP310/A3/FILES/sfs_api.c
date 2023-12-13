@@ -39,15 +39,17 @@ void mksfs(int fresh)
         }
 
         //  Initialize all disk data structures
-        write_blocks(SB_BLOCK_, 1, s_init()); // write superblock to disk
+        sb = s_init(sb);                // initialize superblock
+        write_blocks(SB_BLOCK_, 1, sb); // write superblock to disk
 
-        ic = i_initCache(); // initialize inode cache
-        write_blocks(ICACHE_BLOCK_START_, ICACHE_NUM_BLOCKS, ic);
+        ic = i_initCache();                                       // initialize inode cache
+        write_blocks(ICACHE_BLOCK_START_, ICACHE_NUM_BLOCKS, ic); // write inode cache to disk
 
-        fbm = b_init(DATA_BLOCKS_AVAIL_); // initialize free data block free bitmap
-        write_blocks(FBM_BLOCK_, 1, fbm);
+        fbm = b_init(DATA_BLOCKS_AVAIL_); // initialize free block bitmap
+        write_blocks(FBM_BLOCK_, 1, fbm); // write free block bitmap to disk
 
-        dir = get_dir(); // get pointer to directory
+        dir = d_init(NUM_INODES_ - 1);          // initialize directory
+        write_blocks(FIRST_DATABLOCK_, 1, dir); // write directory to disk
     }
     else // load existing file system
     {
@@ -57,9 +59,6 @@ void mksfs(int fresh)
             printf("Error initializing disk\n");
             return;
         }
-        ic = get_icache(); // get pointer to inode cache
-        fbm = getBitmap(); // get pointer to free data block bitmap
-        dir = get_dir();   // get pointer to directory
     }
 }
 
@@ -90,8 +89,33 @@ int sfs_getfilesize(const char *p)
 
 int sfs_fopen(char *name)
 {
-    // check if file exists
-    int i;
+    int inode_num = d_getFile(name); // get inode number of file
+    if (inode_num == -1)
+    {
+        printf("File not found\n");
+
+        // create new file
+        inode_num = get_free_inode(); // get free inode
+        printf("Free inode: %d\n", inode_num);
+        if (inode_num == -1)
+        {
+            printf("No free inodes\n");
+            return -1;
+        }
+
+        // initialize inode
+        inode *i = init_inode(inode_num);
+        ic->i[inode_num] = *i;
+
+        printf("Inode initialized\n");
+        d_addEntry(name, inode_num); // add new entry to directory
+        printf("Directory entry added\n");
+
+        // create new file descriptor
+        FDTentry *fd = f_createEntry(inode_num); // get free file descriptor table entry
+        ft->f[inode_num] = *fd;                  // add file descriptor to file table
+    }
+    ft = f_init(ft); // initialize file descriptor table
 
     return 0;
 }
@@ -100,7 +124,6 @@ int sfs_fopen(char *name)
 /* sfs_fclose() */
 /* ------------ */
 /* This function closes a file */
-
 int sfs_fclose(int fd)
 {
     return 0;
@@ -153,6 +176,7 @@ int sfs_remove(char *p)
 int main()
 {
     mksfs(1);
-    int f = sfs_fopen("some_name.txt");
+    // int f = sfs_fopen("some_name.txt");
+
     return 0;
 }

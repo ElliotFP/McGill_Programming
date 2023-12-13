@@ -30,12 +30,11 @@ typedef struct
 	int lastfreebit;			  // Index of the last free bit found in the bitmap
 } Bitmap;
 
-Bitmap *getBitmap();			// Get the free data block bitmap
-void b_set(Bitmap *b, int i);	// Set the bit at index 'i' to 1
-void b_clear(Bitmap *b, int i); // Set the bit at index 'i' to 0
-int b_getbit(Bitmap *b, int i); // Get the value of the bit at index 'i'
-Bitmap *b_init(int n);			// Initialize a bitmap of size 'n'
-int b_getfreebit(Bitmap *b);	// Get the index of the first free bit
+void b_set(int i);	   // Set the bit at index 'i' to 1
+void b_clear(int i);   // Set the bit at index 'i' to 0
+int b_getbit(int i);   // Get the value of the bit at index 'i'
+Bitmap *b_init(int n); // Initialize a bitmap of size 'n'
+int b_getfreebit();	   // Get the index of the first free bit
 /* Inode */
 
 struct i_node
@@ -51,8 +50,9 @@ typedef struct
 	inode i[NUM_INODES_]; // Array of inodes
 } icache;
 
-icache *get_icache();  // Get the inode cache
-icache *i_initCache(); // Initialize inode cache
+icache *i_initCache();			  // Initialize inode cache
+inode *init_inode(int inode_num); // Initialize an inode
+int get_free_inode();			  // Get the index of the first free inode
 
 /* Directory Table */
 
@@ -71,12 +71,9 @@ typedef struct
 	dir_entry list[NUM_INODES_ - 1]; // Array of directory entries
 } directory;
 
-directory *d_initDir(); // Initialize the directory structure
-directory *get_dir();	// Get the directory structure
-// int d_addEntry(int id, char *name);	 // Add a new entry to the directory
-// int d_getNextDirName(char *namebuf); // Get the name of the next directory entry
-// int d_name2Index(char *namebuf);	 // Convert a directory name to its index
-// int d_removeEntry(int index);		 // Remove a directory entry
+directory *d_init(int n);					 // Initialize the directory structure
+int d_getFile(const char *name);			 // Get the inode number of a file in the directory
+int d_addEntry(const char *name, int inode); // Add a new entry to the directory
 
 /* File Descriptor Table */
 
@@ -85,13 +82,15 @@ struct file_descriptor_table_entry
 	int rw;		// Read-Write pointer indicating the current read/write position in the file
 	int active; // Indicates whether the file descriptor is active (in use) or not
 	int inode;	// inode number associated with this file descriptor
-} typedef FTDentry;
+} typedef FDTentry;
 
 struct file_descriptor_table
 {
-	FTDentry f[NUM_INODES_ - 1]; // Array of file descriptor table entries
+	FDTentry f[NUM_INODES_ - 1]; // Array of file descriptor table entries
 } typedef FDT;
 
+FDT *f_init();							// Get the file descriptor table
+FDTentry *f_createEntry(int inode);		// Create a new file descriptor table entry
 void f_activate(int inode);				// Activate a file descriptor
 int f_getRW(int inode);					// Get the current read/write position of a file descriptor
 void f_setRW(int inode, int newrw);		// Set the read/write position of a file descriptor
