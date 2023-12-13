@@ -27,32 +27,6 @@ FDT *ft;
 /* ------- */
 /* This function creates a new file system or loads an existing one */
 
-void init_superblock() // Initialize the superblock
-{
-    sb = s_init();
-
-    // allocate memory for superblock
-    char *buffer = (char *)malloc(sizeof(sb));
-    memcpy(buffer, sb, sizeof(sb)); // copy superblock to buffer
-
-    write_blocks(SB_BLOCK_, 1, buffer); // write superblock to disk
-    free(buffer);
-}
-void init_FDB()
-{
-    // initialize free data blocks
-    fd = FDB_init();
-
-    // allocate memory for free data block's free bitmap pointer
-    char *buffer = (char *)malloc(sizeof(fd));
-    memcpy(buffer, fd, sizeof(fd));
-
-    // write free data blocks to disk
-    printf("Writing free data blocks to disk\n");
-    write_blocks(FBM_BLOCK_, 1, buffer); // write free data block free bitmap to disk
-    printf("Free data blocks written to disk\n");
-    free(buffer);
-}
 void init_icache()
 {
     // initialize icache
@@ -61,7 +35,7 @@ void init_icache()
 
     // allocate memory for icache
     char *buffer = (char *)malloc(sizeof(ic));
-    memcpy(buffer, ic, sizeof(ic));
+    memcpy(buffer, ic, sizeof(*ic));
 
     // write icache to disk
     write_blocks(ICACHE_BLOCK_START_, ICACHE_NUM_BLOCKS, buffer);
@@ -91,9 +65,13 @@ void mksfs(int fresh)
         }
 
         //  Initialize all disk data structures
-        init_superblock();
+        write_blocks(SB_BLOCK_, 1, s_init()); // write superblock to disk
+
+        // initialize free data blocks
+        fd = FDB_init();
+        write_blocks(FBM_BLOCK_, 1, FDB_init()); // write free data block free bitmap to disk
+
         init_icache();
-        init_FDB();
         // init_freebitmap();
         dir = d_initDir();
     }

@@ -21,10 +21,6 @@ int sfs_fseek(int, int);
 
 int sfs_remove(char *);
 
-void init_superblock();
-
-void init_FDB();
-
 void init_icache();
 
 #endif

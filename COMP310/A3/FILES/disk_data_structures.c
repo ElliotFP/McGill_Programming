@@ -34,8 +34,16 @@ Bitmap *b_init(int n) // Initialize a bitmap of size n
     int bytes = (int)ceil(exactbytes); // Round up to the nearest integer.
 
     // Allocate memory for the Bitmap structure and the bitmap itself.
-    Bitmap *b = (Bitmap *)malloc(sizeof(Bitmap));
-    b->mp = (bitmap_p)malloc(bytes);
+    Bitmap *b = (Bitmap *)calloc(1, sizeof(Bitmap));
+    b->mp = (bitmap_p)calloc(1, bytes);
+
+    // initialize bitmap to all 1s (all bits are free)
+    int x;
+    for (x = 0; x < n; x++)
+    {
+        b_set(b, x);
+    }
+    printf("Bitmap initialized with %d bits\n", n);
 
     // Initialize the bitmap fields.
     b->numbits = n;
@@ -93,16 +101,23 @@ icache *i_initCache() // initialize inode cache
     ic = (icache *)malloc(sizeof(icache)); // allocate memory for inode cache
     int x;                                 // iterator
 
-    for (x = 1; x < MAX_FILES_; x++) // iterate over all inodes
+    for (x = 0; x < MAX_FILES_; x++) // iterate over all inodes
     {
         ic->i[x].active = 0;
         ic->i[x].size = 0;
+        // set all pointers to -1
+        for (int y = 0; y < NUM_DIR_DATABLOCKS_; y++)
+        {
+            ic->i[x].pointers[y] = -1;
+        }
+        ic->i[x].indexPointer = -1;
     }
     ic->iFree = b_init(NUM_INODES_); // initialize bitmap
 
     // setup directory inode
     b_set(ic->iFree, 0);
     ic->i[0].active = 1;
+    ic->i[0].size = 0;
 
     printf("Inode cache initialized\n");
     return ic; // return inode cache pointer
