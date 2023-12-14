@@ -24,6 +24,7 @@ int b_getbit(int i) { return b->bits[i]; }
 
 Bitmap *b_init(int n) // Initialize a bitmap of size n
 {
+    printf("Initializing bitmap\n");
     b = (Bitmap *)calloc(1, sizeof(Bitmap)); // Allocate memory for the bitmap
     // initialize bitmap to all 1s (all bits are free)
     int x;
@@ -31,7 +32,6 @@ Bitmap *b_init(int n) // Initialize a bitmap of size n
     {
         b->bits[x] = 1;
     }
-    printf("Bitmap initialized with %d bytes\n", n);
 
     // Initialize the bitmap fields.
     b->numbits = n;
@@ -71,7 +71,6 @@ superblock *s_init() // Initialize the superblock
     s->fsSize = NUM_BLOCKS_;
     s->itablelength = NUM_INODES_;
     s->rtdir = 0;
-    printf("Superblock initialized\n");
 
     return s; // Return the superblock pointer
 }
@@ -80,6 +79,7 @@ superblock *s_init() // Initialize the superblock
 
 icache *i_initCache() // initialize inode cache
 {
+    printf("Initializing inode cache\n");
     int x; // iterator
 
     ic = (icache *)calloc(1, sizeof(icache)); // allocate memory for inode cache
@@ -104,7 +104,7 @@ icache *i_initCache() // initialize inode cache
 
 inode *init_inode(int inode_num) // initialize an inode
 {
-    inode *i;
+    inode *i = (inode *)calloc(1, sizeof(inode)); // allocate memory for inode
     i->active = 1;
     i->size = 0;
     int x;
@@ -187,32 +187,27 @@ FDT *f_init() // Initialize the file descriptor table
         ft->f[x].rw = 0;     // Initialize Read/Write pointer to 0
         ft->f[x].active = 0; // Mark the file descriptor as inactive
         ft->f[x].inode = -1; // Set the inode number to -1
+        ft->f[x].fd = x;     // Set the file descriptor number
     }
     return ft; // Return the file descriptor table pointer
 }
 
-FDTentry *f_createEntry(int inode) // Create a new file descriptor table entry
+int f_createEntry(int inode) // Create a new file descriptor table entry
 {
     FDTentry *f = (FDTentry *)malloc(sizeof(FDTentry)); // Allocate memory for the file descriptor table entry
-    f->rw = 0;                                          // Initialize Read/Write pointer to 0
-    f->active = 1;                                      // Mark the file descriptor as active
-    f->inode = inode;                                   // Set the inode number
-    return f;                                           // Return the file descriptor table entry pointer
-}
+    printf("Creating file descriptor table entry\n");
 
-void f_activate(int inode) // Activate a file descriptor
-{
-    ft->f[inode].active = 1;
-}
-
-int f_getRW(int inode) // Get the current read/write position of a file descriptor
-{
-    return ft->f[inode].rw;
-}
-
-int f_isActive(int inode) // Check if a file descriptor is active
-{
-    return ft->f[inode].active;
+    for (int x = 0; x < NUM_INODES_ - 1; x++) // Iterate over all possible file descriptors
+    {
+        if (ft->f[x].active == 0) // If an inactive file descriptor is found, use it
+        {
+            ft->f[x].rw = 0;        // Initialize Read/Write pointer to 0
+            ft->f[x].active = 1;    // Mark the file descriptor as active
+            ft->f[x].inode = inode; // Set the inode number
+            return ft->f[x].fd;
+        }
+    }
+    return -1; // If no inactive file descriptor is found, return -1
 }
 
 void f_setRW(int inode, int newrw) // Set the rw pointer for a specific inode
@@ -229,4 +224,6 @@ void f_incdecRW(int inode, int incdec) // incdec the rw pointer for a specific i
 void f_deactivate(int inode) // Deactivate a file descriptor
 {
     ft->f[inode].active = 0;
+    ft->f[inode].rw = 0;
+    ft->f[inode].inode = -1;
 }

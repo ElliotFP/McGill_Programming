@@ -39,7 +39,7 @@ void mksfs(int fresh)
         }
 
         //  Initialize all disk data structures
-        sb = s_init(sb);                // initialize superblock
+        sb = s_init();                  // initialize superblock
         write_blocks(SB_BLOCK_, 1, sb); // write superblock to disk
 
         ic = i_initCache();                                       // initialize inode cache
@@ -60,6 +60,7 @@ void mksfs(int fresh)
             return;
         }
     }
+    ft = f_init(); // initialize file descriptor table
 }
 
 /* --------------------- */
@@ -96,7 +97,6 @@ int sfs_fopen(char *name)
 
         // create new file
         inode_num = get_free_inode(); // get free inode
-        printf("Free inode: %d\n", inode_num);
         if (inode_num == -1)
         {
             printf("No free inodes\n");
@@ -107,17 +107,23 @@ int sfs_fopen(char *name)
         inode *i = init_inode(inode_num);
         ic->i[inode_num] = *i;
 
-        printf("Inode initialized\n");
         d_addEntry(name, inode_num); // add new entry to directory
-        printf("Directory entry added\n");
 
-        // create new file descriptor
-        FDTentry *fd = f_createEntry(inode_num); // get free file descriptor table entry
-        ft->f[inode_num] = *fd;                  // add file descriptor to file table
+        free(i); // free inode
     }
-    ft = f_init(ft); // initialize file descriptor table
+    else // file found
+    {
+        printf("File found\n");
+    }
 
-    return 0;
+    int fd = f_createEntry(inode_num); // get free file descriptor table entry
+    if (fd == -1)
+    {
+        printf("No free file descriptors\n");
+        return -1;
+    }
+    printf("File opened\n");
+    return fd;
 }
 
 /* ------------ */
@@ -126,6 +132,14 @@ int sfs_fopen(char *name)
 /* This function closes a file */
 int sfs_fclose(int fd)
 {
+    if (ft->f[fd].active == 0)
+    {
+        printf("File descriptor not active\n");
+        return -1;
+    }
+
+    f_deactivate(fd); // deactivate file descriptor
+
     return 0;
 }
 
@@ -176,7 +190,20 @@ int sfs_remove(char *p)
 int main()
 {
     mksfs(1);
-    // int f = sfs_fopen("some_name.txt");
+    int f = sfs_fopen("some_name.txt");
+    int g = sfs_fopen("some_other_name.txt");
+    printf("File descriptor: %d\n", f);
+    printf("File descriptor: %d\n", g);
+    printf("File descriptor: %d\n", ft->f[f].inode);
+    printf("File descriptor: %d\n", ft->f[g].inode);
+    sfs_fclose(f);
+    printf("File descriptor: %d\n", ft->f[g].inode);
+    int z = sfs_fopen("some_other_name_2.txt");
+    int h = sfs_fopen("some_other_name.txt");
+    printf("File descriptor: %d\n", ft->f[h].inode);
+    printf("File descriptor: %d\n", ft->f[z].inode);
+    printf("File descriptor: %d\n", z);
+    printf("File descriptor: %d\n", h);
 
     return 0;
 }

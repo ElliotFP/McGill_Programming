@@ -58,9 +58,9 @@ int get_free_inode();			  // Get the index of the first free inode
 
 struct dir_entry
 {
-	int active;										 // Indicates whether the directory entry is active (in use) or not
-	int inode;										 // Inode number associated with the directory entry
-	char *fname[MAX_FILE_NAME_ + MAX_FILE_EXT_ + 2]; // Filename (including file extension and null terminator)
+	int active;										// Indicates whether the directory entry is active (in use) or not
+	int inode;										// Inode number associated with the directory entry
+	char fname[MAX_FILE_NAME_ + MAX_FILE_EXT_ + 2]; // Filename (including file extension and null terminator)
 } typedef dir_entry;
 
 typedef struct
@@ -82,18 +82,18 @@ struct file_descriptor_table_entry
 	int rw;		// Read-Write pointer indicating the current read/write position in the file
 	int active; // Indicates whether the file descriptor is active (in use) or not
 	int inode;	// inode number associated with this file descriptor
+	int fd;		// File descriptor number
 } typedef FDTentry;
 
 struct file_descriptor_table
 {
 	FDTentry f[NUM_INODES_ - 1]; // Array of file descriptor table entries
+	int fd;
 } typedef FDT;
 
-FDT *f_init();							// Get the file descriptor table
-FDTentry *f_createEntry(int inode);		// Create a new file descriptor table entry
-void f_activate(int inode);				// Activate a file descriptor
-int f_getRW(int inode);					// Get the current read/write position of a file descriptor
-void f_setRW(int inode, int newrw);		// Set the read/write position of a file descriptor
+FDT *f_init();				  // Get the file descriptor table
+int f_createEntry(int inode); // Create a new file descriptor table entry
+void f_setRW(int inode, int newrw);
 void f_incdecRW(int inode, int incdec); // Increment or decrement the read/write position
 void f_deactivate(int inode);			// Deactivate a file descriptor
 
