@@ -110,6 +110,10 @@ int sfs_fopen(char *name)
         d_addEntry(name, inode_num); // add new entry to directory
 
         free(i); // free inode
+
+        // update disk
+        write_blocks(ICACHE_BLOCK_START_, ICACHE_NUM_BLOCKS, ic); // write inode cache to disk
+        write_blocks(FIRST_DATABLOCK_, 1, dir);                   // write directory to disk
     }
     else // file found
     {
@@ -147,9 +151,37 @@ int sfs_fclose(int fd)
 /* sfs_fwrite() */
 /* ------------ */
 /* This function writes to a file */
-
-int sfs_fwrite(int a, const char *p, int b)
+int sfs_fwrite(int fd, const char *buffer, int length)
 {
+    if (ft->f[fd].active == 0)
+    {
+        printf("File descriptor not active\n");
+        return -1;
+    }
+
+    if (ft->f[fd].rw + length > BLOCKSIZE_) // check if write exceeds block size
+    {
+        printf("Write exceeds block size\n");
+        return -1;
+    }
+
+    // read current block from disk and append buffer to it
+    int block_num = ft->f[fd].rw / BLOCKSIZE_;
+    char *block = (char *)malloc(BLOCKSIZE_);
+
+    // cursed
+    read_blocks(ic->i[ft->f[fd].inode].pointers[block_num], 1, block); // read block from disk
+
+    int i;
+    int rw_in_block = ft->f[fd].rw % BLOCKSIZE_;
+    printf("rw_in_block: %d\n", rw_in_block);
+    for (i = 0; i < length; i++)
+    {
+        block[rw_in_block + i] = buffer[i]; // append buffer to block
+    }
+
+    write_blocks(ic->i[ft->f[fd].inode].pointers[block_num], 1, block); // write block to disk
+
     return 0;
 }
 
@@ -192,18 +224,12 @@ int main()
     mksfs(1);
     int f = sfs_fopen("some_name.txt");
     int g = sfs_fopen("some_other_name.txt");
-    printf("File descriptor: %d\n", f);
-    printf("File descriptor: %d\n", g);
-    printf("File descriptor: %d\n", ft->f[f].inode);
-    printf("File descriptor: %d\n", ft->f[g].inode);
+    char *buffer = "Hello World!";
+    char *buffer2 = "Goodbye World!";
+    sfs_fwrite(f, buffer, strlen(buffer));
+    sfs_fwrite(g, buffer2, strlen(buffer2));
     sfs_fclose(f);
-    printf("File descriptor: %d\n", ft->f[g].inode);
-    int z = sfs_fopen("some_other_name_2.txt");
-    int h = sfs_fopen("some_other_name.txt");
-    printf("File descriptor: %d\n", ft->f[h].inode);
-    printf("File descriptor: %d\n", ft->f[z].inode);
-    printf("File descriptor: %d\n", z);
-    printf("File descriptor: %d\n", h);
+    sfs_fclose(g);
 
     return 0;
 }
