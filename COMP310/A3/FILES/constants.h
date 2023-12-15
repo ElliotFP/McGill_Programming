@@ -20,7 +20,7 @@
 /* Directory */
 #define MAX_FILE_NAME_ 16
 #define MAX_FILE_EXT_ 3
-#define DIR_INODE_ 100
+#define DIR_INODE_ 0
 #define NUM_DIR_DATABLOCKS_ 12
 #define NUM_PTRS_INDIR_ BLOCKSIZE_ / 6                                 // pts are 4 byte ints but I am being cautious because of packing & padding
 #define MAX_FILE_DATABLOCKS_ = (NUM_DIR_DATABLOCKS_ + NUM_PTRS_INDIR_) // 12 + 170 = 182 max data blocks per file

@@ -89,11 +89,11 @@ icache *i_initCache() // initialize inode cache
         ic->i[x].active = 0;
         ic->i[x].size = 0;
         // set all pointers to -1
-        for (int y = 0; y < NUM_DIR_DATABLOCKS_; y++)
-        {
-            ic->i[x].pointers[y] = -1;
-        }
-        ic->i[x].indexPointer = -1;
+        // for (int y = 0; y < NUM_DIR_DATABLOCKS_; y++)
+        // {
+        //     ic->i[x].pointers[y] = -1;
+        // }
+        // ic->i[x].indexPointer = -1;
     }
 
     return ic; // return inode cache pointer
@@ -104,7 +104,6 @@ inode *init_inode(int inode_num) // initialize an inode
     inode *i = (inode *)calloc(1, sizeof(inode)); // allocate memory for inode
     i->active = 1;
     i->size = 0;
-    int x;
     return i;
 }
 
@@ -115,6 +114,7 @@ int get_free_inode() // Get the index of the first free inode
     {
         if (ic->i[x].active == 0) // if an inactive inode is found, return its index
         {
+            ic->i[x].active = 1;
             return x;
         }
     }
@@ -137,8 +137,15 @@ directory *d_init(int maxEntries) // Initialize the directory structure
     }
     d->iter = 0; // Reset directory iteration index
 
-    b_getfreebit(); // Mark the first directory entry as used
+    // store the directory in the first inode
+    ic->i[DIR_INODE_].active = 1;
+    ic->i[DIR_INODE_].size = sizeof(d);
 
+    int freebit = b_getfreebit();            // get a free data block (first one)
+    ic->i[DIR_INODE_].pointers[0] = freebit; // first data block
+
+    // write to disk
+    write_blocks(freebit + FIRST_DATABLOCK_, 1, (void *)d);
     return d;
 }
 
@@ -165,6 +172,29 @@ int d_addEntry(const char *name, int inode) // Add a directory entry
             d->list[x].active = 1; // Mark the directory entry as active
             d->list[x].inode = inode;
             strcpy(d->list[x].fname, name); // Copy the filename into the directory entry
+
+            int last_block_pointer = ic->i[DIR_INODE_].size / BLOCKSIZE_;
+            int rw_in_block = ic->i[DIR_INODE_].size % BLOCKSIZE_;
+
+            if (rw_in_block + sizeof(d) > BLOCKSIZE_) // not enough space in the last block
+            {
+                last_block_pointer++;
+                ic->i[DIR_INODE_].pointers[last_block_pointer] = last_block_pointer;
+                write_blocks(ic->i[DIR_INODE_].pointers[last_block_pointer] + FIRST_DATABLOCK_, 1, d);
+                ic->i[DIR_INODE_].size = last_block_pointer * BLOCKSIZE_ + sizeof(d);
+            }
+            else // enough space in the last block
+            {
+                char *block = (char *)malloc(BLOCKSIZE_);
+                read_blocks(ic->i[DIR_INODE_].pointers[last_block_pointer] + FIRST_DATABLOCK_, 1, (void *)block);
+
+                memcpy(block + rw_in_block, d, sizeof(&d));
+
+                write_blocks(ic->i[DIR_INODE_].pointers[last_block_pointer] + FIRST_DATABLOCK_, 1, block);
+                free(block);
+                ic->i[DIR_INODE_].size += sizeof(d);
+            }
+
             return 0;
         }
     }

@@ -42,14 +42,12 @@ void mksfs(int fresh)
         sb = s_init();                  // initialize superblock
         write_blocks(SB_BLOCK_, 1, sb); // write superblock to disk
 
-        ic = i_initCache();                                       // initialize inode cache
-        write_blocks(ICACHE_BLOCK_START_, ICACHE_NUM_BLOCKS, ic); // write inode cache to disk
-
         fbm = b_init(DATA_BLOCKS_AVAIL_); // initialize free block bitmap
         write_blocks(FBM_BLOCK_, 1, fbm); // write free block bitmap to disk
 
-        dir = d_init(NUM_INODES_ - 1);          // initialize directory
-        write_blocks(FIRST_DATABLOCK_, 1, dir); // write directory to disk
+        ic = i_initCache();                                       // initialize inode cache
+        dir = d_init(NUM_INODES_ - 1);                            // initialize directory
+        write_blocks(ICACHE_BLOCK_START_, ICACHE_NUM_BLOCKS, ic); // write inode cache to disk
     }
     else // load existing file system
     {
@@ -116,7 +114,6 @@ int sfs_fopen(char *name)
 
         // update disk
         write_blocks(ICACHE_BLOCK_START_, ICACHE_NUM_BLOCKS, ic); // write inode cache to disk
-        write_blocks(FIRST_DATABLOCK_, 1, dir);                   // write directory to disk
     }
     else // file found
     {

@@ -13,7 +13,7 @@ int main()
 {
     mksfs(1);
     int f = sfs_fopen("some_name.txt");
-    int g = sfs_fopen("some_other_name.txt");
+//    int g = sfs_fopen("some_other_name.txt");
     char my_data[] = "The quick brown fox jumps over the lazy dog";
     char out_data[1024];
     sfs_fwrite(f, my_data, sizeof(my_data) + 1);
@@ -21,6 +21,6 @@ int main()
     sfs_fread(f, out_data, sizeof(out_data) + 1);
     printf("%s\n", out_data);
     sfs_fclose(f);
-    sfs_fclose(g);
+  //  sfs_fclose(g);
     // sfs_remove("some_name.txt");
 }
