@@ -73,6 +73,7 @@ typedef struct
 directory *d_init(int n);					 // Initialize the directory structure
 int d_getFile(const char *name);			 // Get the inode number of a file in the directory
 int d_addEntry(const char *name, int inode); // Add a new entry to the directory
+int d_removeEntry(const char *name);		 // Remove an entry from the directory
 
 /* File Descriptor Table */
 

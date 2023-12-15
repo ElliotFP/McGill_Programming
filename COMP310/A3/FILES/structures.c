@@ -171,6 +171,40 @@ int d_addEntry(const char *name, int inode) // Add a directory entry
     return -1; // If no inactive directory entry is found, return -1
 }
 
+int d_removeEntry(const char *name) // Remove a directory entry
+{
+    int x;
+    for (x = 0; x < NUM_INODES_ - 1; x++) // Iterate over all directory entries
+    {
+        if (strcmp(d->list[x].fname, name) == 0) // If the filename matches, remove the entry
+        {
+            d->list[x].active = 0; // Mark the directory entry as inactive
+
+            // unallocate the data blocks
+            for (int y = 0; y < NUM_DIR_DATABLOCKS_; y++)
+            {
+
+                if (ic->i[d->list[x].inode].pointers[y] != -1)
+                {
+                    b->bits[ic->i[d->list[x].inode].pointers[y]] = 1;
+                }
+            }
+
+            // unallocate the inode
+            ic->i[d->list[x].inode].active = 0;
+            ic->i[d->list[x].inode].size = 0;
+            for (int y = 0; y < NUM_DIR_DATABLOCKS_; y++)
+            {
+                ic->i[d->list[x].inode].pointers[y] = -1;
+            }
+            ic->i[d->list[x].inode].indexPointer = -1;
+
+            return 0;
+        }
+    }
+    return -1; // If the filename is not found, return -1
+}
+
 /* File Descriptor Table */
 
 FDT *f_init() // Initialize the file descriptor table
@@ -196,7 +230,6 @@ int f_createEntry(int inode) // Create a new file descriptor table entry
     {
         if (ft->f[x].active == 0) // If an inactive file descriptor is found, use it
         {
-            printf("the rw pointer is %d\n", ic->i[inode].size);
             ft->f[x].rw = ic->i[inode].size; // Set the read/write pointer to the end of the file
             ft->f[x].active = 1;             // Mark the file descriptor as active
             ft->f[x].inode = inode;          // Set the inode number
