@@ -17,6 +17,8 @@ int write_to_block(int, int, const char *);
 
 int sfs_fwrite(int, const char *, int);
 
+int read_from_block(int, int, char *, int);
+
 int sfs_fread(int, char *, int);
 
 int sfs_fseek(int, int);
