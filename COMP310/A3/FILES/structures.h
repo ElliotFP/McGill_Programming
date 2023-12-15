@@ -65,7 +65,6 @@ struct dir_entry
 
 typedef struct
 {
-
 	int numEntry;					 // Number of active entries in the directory
 	int iter;						 // Iterator for directory entries
 	dir_entry list[NUM_INODES_ - 1]; // Array of directory entries

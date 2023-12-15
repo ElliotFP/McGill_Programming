@@ -13,6 +13,8 @@ int sfs_fopen(char *);
 
 int sfs_fclose(int);
 
+int write_to_block(int, int, const char *);
+
 int sfs_fwrite(int, const char *, int);
 
 int sfs_fread(int, char *, int);
@@ -20,7 +22,5 @@ int sfs_fread(int, char *, int);
 int sfs_fseek(int, int);
 
 int sfs_remove(char *);
-
-void init_icache();
 
 #endif

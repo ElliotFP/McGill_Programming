@@ -39,14 +39,14 @@ Bitmap *b_init(int n) // Initialize a bitmap of size n
     return b; // Return the bitmap pointer
 }
 
-int b_getfreebit() // Get the index of the first free bit
+int b_getfreebit() // Get the index of the first free
 {
     int x;
     for (x = 0; x < b->numbits; x++) // iterate over all bits
     {
         if (b->bits[x] == 1) // if a free bit is found, return its index
         {
-            b->lastfreebit = x;
+            b->bits[x] = 0;
             return x;
         }
     }
@@ -89,15 +89,12 @@ icache *i_initCache() // initialize inode cache
         ic->i[x].active = 0;
         ic->i[x].size = 0;
         // set all pointers to -1
-        // for (int y = 0; y < NUM_DIR_DATABLOCKS_; y++)
-        // {
-        //     ic->i[x].pointers[y] = -1;
-        // }
-        // ic->i[x].indexPointer = -1;
+        for (int y = 0; y < NUM_DIR_DATABLOCKS_; y++)
+        {
+            ic->i[x].pointers[y] = -1;
+        }
+        ic->i[x].indexPointer = -1;
     }
-    // setup directory inode
-    ic->i[0].active = 1;
-    ic->i[0].size = 0;
 
     return ic; // return inode cache pointer
 }
@@ -108,11 +105,6 @@ inode *init_inode(int inode_num) // initialize an inode
     i->active = 1;
     i->size = 0;
     int x;
-    for (x = 0; x < NUM_DIR_DATABLOCKS_; x++) // initialize direct pointers to -1
-    {
-        i->pointers[x] = -1;
-    }
-    i->indexPointer = -1;
     return i;
 }
 
@@ -144,6 +136,9 @@ directory *d_init(int maxEntries) // Initialize the directory structure
         d->list[x].active = 0; // Mark each directory entry as inactive
     }
     d->iter = 0; // Reset directory iteration index
+
+    b_getfreebit(); // Mark the first directory entry as used
+
     return d;
 }
 
@@ -201,9 +196,10 @@ int f_createEntry(int inode) // Create a new file descriptor table entry
     {
         if (ft->f[x].active == 0) // If an inactive file descriptor is found, use it
         {
-            ft->f[x].rw = 0;        // Initialize Read/Write pointer to 0
-            ft->f[x].active = 1;    // Mark the file descriptor as active
-            ft->f[x].inode = inode; // Set the inode number
+            printf("the rw pointer is %d\n", ic->i[inode].size);
+            ft->f[x].rw = ic->i[inode].size; // Set the read/write pointer to the end of the file
+            ft->f[x].active = 1;             // Mark the file descriptor as active
+            ft->f[x].inode = inode;          // Set the inode number
             return ft->f[x].fd;
         }
     }
