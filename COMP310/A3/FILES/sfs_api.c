@@ -159,7 +159,6 @@ int write_to_block(int block_num, int rw, const char *buffer) // helper function
         printf("No free blocks\n");
         return -1;
     }
-
     int length = strlen(buffer);
 
     char *block = (char *)malloc(BLOCKSIZE_);
@@ -171,28 +170,29 @@ int write_to_block(int block_num, int rw, const char *buffer) // helper function
         block[rw + i] = buffer[i];
         i++;
     }
-
+    printf("length: %d\n", length);
+    printf("rw +i: %d\n", i);
+    printf("buffer char at i: %c\n", buffer[i]);
     write_blocks(block_num + FIRST_DATABLOCK_, 1, block); // write block to disk and offset so that it starts at the first data block
-
-    rw += i; // increment rw in block
-
+    rw += i;                                              // increment rw in block
     return rw;
 }
 
 int sfs_fwrite(int fd, const char *buffer, int length)
 {
-    // printf("Writing %s to file\n", buffer);
     printf("Writing %d bytes to file\n", length);
     printf("rw %d\n", ft->f[fd].rw);
-    int ftrw = ft->f[fd].rw; // current rw in file
-    int inode_num = ft->f[fd].inode;
+
     if (ft->f[fd].active == 0)
     {
         printf("File descriptor not active\n");
         return -1;
     }
 
-    if (ftrw == 0) // initialize block pointer if rw is 0
+    int rw = ft->f[fd].rw; // current rw in file
+    int inode_num = ft->f[fd].inode;
+
+    if (rw == 0) // initialize block pointer if rw is 0
     {
         ic->i[inode_num].pointers[0] = b_getfreebit(); // get free block
 
@@ -202,30 +202,23 @@ int sfs_fwrite(int fd, const char *buffer, int length)
         }
     }
 
-    int new_length = length + ftrw;
-    int block_num = ftrw / BLOCKSIZE_;   // current block number
-    int rw_in_block = ftrw % BLOCKSIZE_; // current rw in block
-    printf("ftrw: %d\n", ftrw);
+    int new_length = length + rw;      // new length of file
+    int block_num = rw / BLOCKSIZE_;   // current block number
+    int rw_in_block = rw % BLOCKSIZE_; // current rw in block
+    printf("ftrw: %d\n", rw);
     printf("rw_in_block: %d\n", rw_in_block);
+    printf("newlength: %d\n", new_length);
 
-    while (ftrw < new_length) // write buffer to file
+    while (rw < new_length) // write buffer to file
     {
-        // printf("block_num: %d\n", ic->i[inode_num].pointers[block_num]);
-        int rw = write_to_block(ic->i[inode_num].pointers[block_num], rw_in_block, buffer); // write to block
+        rw_in_block = write_to_block(ic->i[inode_num].pointers[block_num], rw_in_block, buffer); // write to block
 
         if (rw == -1)
         {
             printf("No free blocks\n");
             return -1;
         }
-
-        // printf("rw: %d\n", rw);
-
-        if (rw == -1) // if buffer is too large, return -1
-        {
-            return -1;
-        }
-        else if (rw == BLOCKSIZE_) // if block is full, get new block
+        else if (rw_in_block == BLOCKSIZE_) // if block is full, get new block
         {
             printf("Block full\n");
             block_num++; // increment block number
@@ -238,6 +231,7 @@ int sfs_fwrite(int fd, const char *buffer, int length)
 
             ic->i[inode_num].pointers[block_num] = b_getfreebit(); // get free block
             rw_in_block = 0;                                       // reset rw in block
+            buffer += BLOCKSIZE_ - rw % BLOCKSIZE_;                // increment buffer
 
             if (ic->i[inode_num].pointers[block_num] == -1)
             {
@@ -246,14 +240,13 @@ int sfs_fwrite(int fd, const char *buffer, int length)
             }
         }
 
-        ftrw = block_num * BLOCKSIZE_ + rw; // increment rw in file
-        rw_in_block = rw;                   // increment rw in block
-        printf("ftrw: %d\n", ftrw);
+        rw = block_num * BLOCKSIZE_ + rw_in_block; // increment rw in file
+        printf("ftrw: %d\n", rw);
     }
 
-    printf("rw: %d\n", ftrw);
-    ft->f[fd].rw = ftrw;
-    ic->i[inode_num].size = ftrw; // update file size
+    printf("rw: %d\n", rw);
+    ft->f[fd].rw = rw;
+    ic->i[inode_num].size = rw; // update file size
     return 0;
 }
 
@@ -295,10 +288,13 @@ int main()
 {
     mksfs(1);
 
-    char *buffer = "Hello World!";
+    int f1 = sfs_fopen("some_name.txt");
+    // int f2 = sfs_fopen("some_name2.txt");
+    char *buffer1 = "Hello World!";
     char *buffer2 = "Goodbye World!";
-    write_to_block(1, 0, buffer);
-    write_to_block(1, 12, buffer2);
+    sfs_fwrite(f1, buffer1, strlen(buffer1));
+    sfs_fwrite(f1, buffer2, strlen(buffer2));
+    sfs_fclose(f1);
 
     // // print it from the disk
     int i;
@@ -309,17 +305,6 @@ int main()
         printf("%c", buffer4[i]);
     }
 
-    // char *buffer = "Hello World!";
-    // char *buffer2 = "Goodbye World!";
-    // sfs_fwrite(f, buffer, strlen(buffer));
-    // sfs_fwrite(g, buffer2, strlen(buffer2));
-    // sfs_fclose(f);
-    // int h = sfs_fopen("some_name.txt");
-    // char *buffer3 = "please lord, please make this work";
-    // sfs_fwrite(h, buffer3, strlen(buffer3));
-    // sfs_fclose(g);
-    // sfs_fclose(h);
-
     // // // print it from the disk
     // int i;
     // char *buffer4 = (void *)malloc(BLOCKSIZE_);
@@ -329,39 +314,40 @@ int main()
     //     printf("%c", buffer4[i]);
     // }
 
-    // // FOR LOOP TO SEE WHAT HAPPENS WHEN WE GO BEYOND A BLOCK
-    // int y = sfs_fopen("some_name.txt");
-    // char *buffer6 = "notre pere qui etes aux cieu, que votre nom soit sanctifie, que votre regne vienn, que votre volonte soit faite sur la terre comme au ciel, donnez-nous aujourd'hui notre pain quotidien, pardonnez-nous nos offenses comme nous pardonnons aussi a ceux qui nous ont offensés, et ne nous soumettez pas a la tentation, mais delivrez-nous du mal, amen.";
-    // sfs_fwrite(y, buffer6, strlen(buffer6));
-    // sfs_fwrite(y, buffer6, strlen(buffer6));
-    // sfs_fwrite(y, buffer6, strlen(buffer6));
-    // sfs_fclose(y);
+    // FOR LOOP TO SEE WHAT HAPPENS WHEN WE GO BEYOND A BLOCK
+    int f = sfs_fopen("some_name.txt");
+    char *buffer6 = "notre pere qui etes aux cieu, que votre nom soit sanctifie, que votre regne vienn, que votre volonte soit faite sur la terre comme au ciel, donnez-nous aujourd'hui notre pain quotidien, pardonnez-nous nos offenses comme nous pardonnons aussi a ceux qui nous ont offensés, et ne nous soumettez pas a la tentation, mais delivrez-nous du mal, amen.";
+    sfs_fwrite(f, buffer6, strlen(buffer6));
+    sfs_fwrite(f, buffer6, strlen(buffer6));
+    sfs_fwrite(f, buffer6, strlen(buffer6));
+    sfs_fwrite(f, buffer6, strlen(buffer6));
+    sfs_fwrite(f, buffer6, strlen(buffer6));
+    sfs_fwrite(f, buffer6, strlen(buffer6));
+    sfs_fwrite(f, buffer6, strlen(buffer6));
+    sfs_fclose(f);
 
-    // // print it from the disk
-    // int i;
-    // char *buffer4 = (void *)malloc(BLOCKSIZE_);
-    // read_blocks(ic->i[0].pointers[0] + FIRST_DATABLOCK_, 1, buffer4);
-    // for (i = 0; i < 1024; i++)
-    // {
-    //     printf("%c", buffer4[i]);
-    // }
-    // printf("\n");
+    // print it from the disk
+    char *buffer5 = (void *)malloc(BLOCKSIZE_);
+    read_blocks(ic->i[0].pointers[0] + FIRST_DATABLOCK_, 1, buffer5);
+    for (i = 0; i < 1024; i++)
+    {
+        printf("%c", buffer5[i]);
+    }
+    printf("\n ____________ \n");
 
-    // printf("remainder: %d\n", 1024 % BLOCKSIZE_);
-    // printf("remainder: %d\n", 1050 % BLOCKSIZE_);
-    // // char *buffer5 = (void *)malloc(BLOCKSIZE_);
-    // read_blocks(ic->i[0].pointers[1] + FIRST_DATABLOCK_, 1, buffer5);
-    // for (i = 0; i < 1024; i++)
-    // {
-    //     printf("%c", buffer5[i]);
-    // }
-    // printf("\n");
-    // char *buffer7 = (void *)malloc(BLOCKSIZE_);
-    // read_blocks(ic->i[0].pointers[2] + FIRST_DATABLOCK_, 1, buffer7);
-    // for (i = 0; i < 1024; i++)
-    // {
-    //     printf("%c", buffer7[i]);
-    // }
+    // char *buffer5 = (void *)malloc(BLOCKSIZE_);
+    read_blocks(ic->i[0].pointers[1] + FIRST_DATABLOCK_, 1, buffer5);
+    for (i = 0; i < 1024; i++)
+    {
+        printf("%c", buffer5[i]);
+    }
+    printf("\n ____________ \n");
+    char *buffer7 = (void *)malloc(BLOCKSIZE_);
+    read_blocks(ic->i[0].pointers[2] + FIRST_DATABLOCK_, 1, buffer7);
+    for (i = 0; i < 1024; i++)
+    {
+        printf("%c", buffer7[i]);
+    }
     // printf("\n");
     // char *buffer8 = (void *)malloc(BLOCKSIZE_);
     // read_blocks(ic->i[0].pointers[3] + FIRST_DATABLOCK_, 1, buffer8);
