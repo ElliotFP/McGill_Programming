@@ -10,12 +10,12 @@ SOURCES= disk_emu.c sfs_api.c structures.c sfs_test1.c
 #SOURCES= disk_emu.c sfs_api.c sfs_inode.c sfs_dir.c fuse_wrap_new.c sfs_api.h
 
 OBJECTS=$(SOURCES:.c=.o)
-EXECUTABLE=sfs
+EXECUTABLE=banana_sfs
 
 all: $(SOURCES) $(HEADERS) $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS)
-	gcc $(OBJECTS) $(LDFLAGS) -o $@
+	gcc $(OBJECTS) -o $@
 
 .c.o:
 	gcc $(CFLAGS) $< -o $@

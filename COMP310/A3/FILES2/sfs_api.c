@@ -1,3 +1,7 @@
+// McGill Fall 2023 - COMP 310 - Operating Systems
+// Elliot Forcier-Poirier
+// 260989602
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -161,7 +165,7 @@ int sfs_fwrite(int fileID, const char *buf, int length)
     while (length > 0)
     {
         // Get the block number and offset of the rw_ptr
-        int inode_link_index = rw_ptr / block_size_;
+        int block_number = rw_ptr / block_size_;
         int block_offset = rw_ptr % block_size_;
 
         // Get the number of bytes to write to block
@@ -178,25 +182,25 @@ int sfs_fwrite(int fileID, const char *buf, int length)
         }
 
         // Check if inode link is a valid data block
-        if (inode_link_index > 11)
+        if (block_number > 11)
         {
-            inode.indirect = i_check_link(inode, inode_link_index);
+            inode.indirect = i_check_link(inode, block_number);
             if (inode.indirect == -1)
             { // No space left on disk
                 break;
             }
             // Write the data
-            write_to_indirect(inode.indirect, inode_link_index - 12, block_offset, buf, write_length);
+            write_to_indirect(inode.indirect, block_number - 12, block_offset, buf, write_length);
         }
         else
         {
-            inode.direct[inode_link_index] = i_check_link(inode, inode_link_index);
-            if (inode.direct[inode_link_index] == -1)
+            inode.direct[block_number] = i_check_link(inode, block_number);
+            if (inode.direct[block_number] == -1)
             { // No space left on disk
                 break;
             }
             // Write the data
-            write_to_block(inode.direct[inode_link_index], block_offset, buf, write_length);
+            write_to_block(inode.direct[block_number], block_offset, buf, write_length);
         }
         length -= write_length;
         rw_ptr += write_length;
@@ -219,17 +223,16 @@ int sfs_fwrite(int fileID, const char *buf, int length)
 int sfs_fread(int fileID, char *buf, int length)
 {
     int initial_length = length;
-    // Get the file's inode and rw_pointer position
     int inode_num = fdt[fileID].inode;
     struct inode inode = i_get_inode(inode_num);
     int rw_ptr = fdt[fileID].rw_ptr;
     int file_size = inode.size;
 
     // Read loop
-    while (length > 0)
+    while (length > 0 && rw_ptr < file_size)
     {
         // Get the block number and offset of the rw_ptr
-        int inode_link_index = rw_ptr / block_size_;
+        int block_num = rw_ptr / block_size_;
         int block_offset = rw_ptr % block_size_;
 
         // Get the number of bytes to read from block
@@ -243,13 +246,13 @@ int sfs_fread(int fileID, char *buf, int length)
         if (read_length <= 0)
             break;
         // Check if inode link is a valid data block
-        if (inode_link_index > 11)
+        if (block_num > 11)
         {
-            read_from_indirect(inode.indirect, inode_link_index - 12, block_offset, buf, read_length);
+            read_from_indirect(inode.indirect, block_num - 12, block_offset, buf, read_length);
         }
         else
         {
-            read_from_block(inode.direct[inode_link_index], block_offset, buf, read_length);
+            read_from_block(inode.direct[block_num], block_offset, buf, read_length);
         }
         length -= read_length;
         rw_ptr += read_length;

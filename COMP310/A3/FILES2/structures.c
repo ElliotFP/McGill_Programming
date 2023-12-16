@@ -386,8 +386,7 @@ int write_to_block(int block_number, int offset, const char *buffer, int size) /
     // Read the block
     struct block *block = (struct block *)calloc(1, sizeof(struct block));
     read_blocks(db_start + block_number, 1, (void *)block);
-    // Write the data into the block
-    memcpy(block->data + offset, buffer, size);
+    memcpy(block->data + offset, buffer, size); // Copy the data from the buffer to the block
     // Write the block to disk
     write_blocks(db_start + block_number, 1, (void *)block);
     return 0;
@@ -415,7 +414,7 @@ int write_to_indirect(int ind_block_num, int block_index, int offset, const char
     }
 
     // Write the data into the data block
-    write_to_block(ind_block->entries[block_index], offset, buffer, size);
+    write_to_block(db_start + ind_block->entries[block_index], offset, buffer, size);
     return 0;
 }
 
@@ -424,8 +423,7 @@ int read_from_block(int block_number, int offset, char *buffer, int size) // rea
     // Read the block
     struct block *block = (struct block *)calloc(1, sizeof(struct block));
     read_blocks(db_start + block_number, 1, (void *)block);
-    // Read the data from the block
-    memcpy(buffer, block->data + offset, size);
+    memcpy(buffer, block->data + offset, size); // Copy the data from the block to the buffer
     return 0;
 }
 
@@ -441,7 +439,7 @@ int read_from_indirect(int ind_block_num, int block_index, int offset, char *buf
         return -1;
     }
     // Read the data from the data block
-    read_from_block(ind_block->entries[block_index], offset, buffer, size);
+    read_from_block(db_start + ind_block->entries[block_index], offset, buffer, size);
     return 0;
 }
 
