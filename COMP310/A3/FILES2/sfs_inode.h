@@ -1,18 +1,22 @@
-struct inode {
+struct inode
+{
     int size;
     int direct[12];
     int indirect;
 };
 
-struct indirect_block {
+struct indirect_block
+{
     int entries[256];
 };
 
-struct inode_block {
+struct inode_block
+{
     struct inode inodes[18];
 };
 
-struct superblock {
+struct superblock
+{
     int magic;
     int block_size;
     int num_blocks;
@@ -20,16 +24,49 @@ struct superblock {
     int root_inode;
 };
 
-struct block {
+struct block
+{
     char data[1024]; // Size of a block
 };
 
-struct free_bitmap {
+struct free_bitmap
+{
     char bits[994]; // Number of data blocks
 };
 
-struct inode* root_inode;
-struct free_bitmap* bitmap;
+struct inode *root_inode;
+struct free_bitmap *bitmap;
+
+struct directory_entry
+{
+    int valid;
+    char name[16];
+    int inode_num;
+};
+
+struct directory_block
+{
+    struct directory_entry entries[42];
+};
+
+struct fdt_entry
+{
+    int valid;
+    int fd;
+    int inode;
+    int rw_ptr;
+};
+
+struct fdt_entry fdt[300];
+
+struct directory_entry dir_cache[500];
+
+int get_free_dir_cache_entry();
+int init_dir_cache();
+
+int init_fdt();
+int get_free_fdt_entry();
+int add_to_fdt(int inode_num);
 
 int init_superblock(int);
 
@@ -39,7 +76,7 @@ int update_inode(int inode_number, struct inode inode);
 int get_free_inode_num();
 int init_root_inode(int fresh);
 int check_inode_link(struct inode inode, int link_index);
-void create_inode(int inode_number, char* name);
+void create_inode(int inode_number, char *name);
 void remove_inode(int inode_number);
 
 int add_inode_blocks_to_fbm(struct inode inode);

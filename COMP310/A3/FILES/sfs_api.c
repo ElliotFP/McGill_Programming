@@ -190,8 +190,6 @@ int write_to_block(int block_num, int rw, const char *buffer) // helper function
 
 int sfs_fwrite(int fd, const char *buffer, int length)
 {
-    printf("Writing %d bytes to file\n", length);
-
     if (ft->f[fd].active == 0)
     {
         printf("File descriptor not active\n");
