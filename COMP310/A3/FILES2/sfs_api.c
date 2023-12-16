@@ -5,11 +5,11 @@
 
 #include "disk_emu.h"
 #include "sfs_api.h"
-#include "sfs_inode.h"
+#include "structures.h"
 #include "constants.h"
 
-int data_block_start;
-int num_of_data_blocks;
+int db_start;
+int num_db;
 int root_inode_num;
 
 /* ------- */
@@ -19,8 +19,8 @@ int root_inode_num;
 void mksfs(int fresh)
 {
     // Initialize variables calculated at runtime
-    data_block_start = (int)ceil(1 + (num_of_inodes / num_of_inodes_per_block)); // +1 for superblock
-    num_of_data_blocks = max_blocks - data_block_start - 1;                      // -1 for free bitmap block
+    db_start = (int)ceil(1 + (num_of_inodes / num_of_inodes_per_block)); // +1 for superblock
+    num_db = max_blocks - db_start - 1;                                  // -1 for free bitmap block
 
     if (fresh)
     {
@@ -36,7 +36,7 @@ void mksfs(int fresh)
     // Initialize all the datastructures
     init_bitmap(fresh);
     init_superblock(fresh);
-    i_init_root_inode(fresh);
+    i_init_root_inode(fresh); // Initializes the root inode
     init_dir_cache();
     init_fdt();
 
