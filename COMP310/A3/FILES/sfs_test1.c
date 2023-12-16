@@ -140,6 +140,10 @@ int main(int argc, char **argv)
       {
         buffer[k] = (char)(j + k);
       }
+      printf("Writing %d bytes to file %s\n", chunksize, names[i]);
+      printf("fds[i]: %d\n", fds[i]);
+      printf("buffer: %s\n", buffer);
+
       tmp = sfs_fwrite(fds[i], buffer, chunksize);
       if (tmp != chunksize)
       {
