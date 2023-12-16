@@ -214,7 +214,9 @@ int sfs_fwrite(int fd, const char *buffer, int length)
         printf("start: %d ", start);
         printf("buffer: '%s' ", buffer);
         printf("size_of_ data: %d\n", size_of_data);
-        int write_length = fmin(BLOCKSIZE_ - rw_in_block, size_of_data - bytes_written); // length of file in block
+        int write_length = BLOCKSIZE_ - rw_in_block;
+        if (write_length > size_of_data - bytes_written)
+            write_length = size_of_data - bytes_written; // length of file in block
 
         rw_in_block += write_length; // increment rw in block
 
@@ -262,31 +264,39 @@ int sfs_fwrite(int fd, const char *buffer, int length)
 /* ----------- */
 /* This function reads from a file */
 
-int read_from_block(int block_num, int rw, char *buffer, int buffer_size) // helper function to read from a specific block given the current rw in that block
+// int read_from_block(int block_num, int rw, char *buffer, int buffer_size) // helper function to read from a specific block given the current rw in that block
+// {
+//     if (block_num == -1)
+//     {
+//         printf("incorrect block address\n");
+//         return -1;
+//     }
+//     if (buffer_size == 0)
+//     {
+//         printf("File is empty\n");
+//         return -1;
+//     }
+//     int rw_in_block = rw % BLOCKSIZE_;              // current rw in block
+//     int length_in_block = BLOCKSIZE_ - rw_in_block; // length of file in block
+//     char *block = (char *)calloc(1, BLOCKSIZE_);
+//     read_blocks(block_num + FIRST_DATABLOCK_, 1, block); // read block from disk and offset so that it starts at the first data block
+//     int i = 0;
+//     while (rw_in_block + i < BLOCKSIZE_ && rw_in_block + i < length_in_block && rw < buffer_size) // read block to buffer
+//     {
+//         buffer[rw] = block[rw_in_block + i];
+//         rw++;
+//         i++;
+//     }
+//     free(block); // free block
+//     return rw;
+// }
+int read_from_block(int block_number, int offset, char *buffer, int size) // read data from a data block
 {
-    if (block_num == -1)
-    {
-        printf("incorrect block address\n");
-        return -1;
-    }
-    if (buffer_size == 0)
-    {
-        printf("File is empty\n");
-        return -1;
-    }
-    int rw_in_block = rw % BLOCKSIZE_;              // current rw in block
-    int length_in_block = BLOCKSIZE_ - rw_in_block; // length of file in block
-    char *block = (char *)calloc(1, BLOCKSIZE_);
-    read_blocks(block_num + FIRST_DATABLOCK_, 1, block); // read block from disk and offset so that it starts at the first data block
-    int i = 0;
-    while (rw_in_block + i < BLOCKSIZE_ && rw_in_block + i < length_in_block && rw < buffer_size) // read block to buffer
-    {
-        buffer[rw] = block[rw_in_block + i];
-        rw++;
-        i++;
-    }
-    free(block); // free block
-    return rw;
+    // Read the block
+    struct block *block = (struct block *)calloc(1, sizeof(struct block));
+    read_blocks(FIRST_DATABLOCK_ + block_number, 1, (void *)block);
+    memcpy(buffer, block->data + offset, size); // Copy the data from the block to the buffer
+    return 0;
 }
 
 int sfs_fread(int fd, char *buffer, int buffer_size)
@@ -319,7 +329,12 @@ int sfs_fread(int fd, char *buffer, int buffer_size)
 
     while (rw < file_size && bytes_read < buffer_size) // read buffer from file
     {
-        rw = read_from_block(ic->i[inode_num].pointers[block_num], rw, buffer, buffer_size); // read from block
+        int read_length = BLOCKSIZE_ - rw_in_block; // length of file in block
+        if (read_length > buffer_size - bytes_read - BLOCKSIZE_ * block_num)
+            read_length = buffer_size - bytes_read - BLOCKSIZE_ * block_num; // length of file in block
+
+        rw += read_length;
+        read_from_block(ic->i[inode_num].pointers[block_num], rw, buffer, buffer_size); // read from block
 
         if (rw % BLOCKSIZE_ == 0) // if block is full, get new block
         {

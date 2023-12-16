@@ -15,7 +15,7 @@ EXECUTABLE=sfs
 all: $(SOURCES) $(HEADERS) $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS)
-	gcc $(OBJECTS) $(LDFLAGS) -o $@
+	gcc $(OBJECTS) -o $@
 
 .c.o:
 	gcc $(CFLAGS) $< -o $@
