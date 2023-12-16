@@ -163,29 +163,17 @@ int sfs_fclose(int fd)
 /* ------------ */
 /* This function writes to a file */
 
-int write_to_block(int block_num, int rw, const char *buffer) // helper function to write to a specific block given the current rw in that block
+int write_to_block(int block_number, int offset, const char *buffer, int size) // write data into a data block
 {
-    if (block_num == -1)
-    {
-        printf("No free blocks\n");
-        return -1;
-    }
-    int length = strlen(buffer);
-
-    char *block = (char *)calloc(1, BLOCKSIZE_);
-    read_blocks(block_num + FIRST_DATABLOCK_, 1, block); // read block from disk and offset so that it starts at the first data block
-
-    int i = 0;
-    while (rw + i < BLOCKSIZE_ && i < length) // write buffer to block
-    {
-        block[rw + i] = buffer[i];
-        i++;
-    }
-    write_blocks(block_num + FIRST_DATABLOCK_, 1, block); // write block to disk and offset so that it starts at the first data block
-
-    free(block); // free block
-    rw += i;     // increment rw in block
-    return rw;
+    // Read the block
+    struct block *block = (struct block *)calloc(1, sizeof(struct block));
+    read_blocks(FIRST_DATABLOCK_ + block_number, 1, (void *)block);
+    memcpy(block->data + offset, buffer, size); // Copy the data from the buffer to the block
+    // printf buffer
+    printf("Buffer: %s\n", buffer);
+    // Write the block to disk
+    write_blocks(FIRST_DATABLOCK_ + block_number, 1, (void *)buffer);
+    return 0;
 }
 
 int sfs_fwrite(int fd, const char *buffer, int length)
@@ -226,8 +214,11 @@ int sfs_fwrite(int fd, const char *buffer, int length)
         printf("start: %d ", start);
         printf("buffer: '%s' ", buffer);
         printf("size_of_ data: %d\n", size_of_data);
+        int write_length = fmin(BLOCKSIZE_ - rw_in_block, size_of_data - bytes_written); // length of file in block
 
-        rw_in_block = write_to_block(ic->i[inode_num].pointers[block_num], rw_in_block, buffer); // write to block
+        rw_in_block += write_length; // increment rw in block
+
+        write_to_block(ic->i[inode_num].pointers[block_num], rw_in_block, buffer, write_length); // write to block
 
         if (rw == -1)
         {
@@ -283,12 +274,10 @@ int read_from_block(int block_num, int rw, char *buffer, int buffer_size) // hel
         printf("File is empty\n");
         return -1;
     }
-
     int rw_in_block = rw % BLOCKSIZE_;              // current rw in block
     int length_in_block = BLOCKSIZE_ - rw_in_block; // length of file in block
     char *block = (char *)calloc(1, BLOCKSIZE_);
     read_blocks(block_num + FIRST_DATABLOCK_, 1, block); // read block from disk and offset so that it starts at the first data block
-
     int i = 0;
     while (rw_in_block + i < BLOCKSIZE_ && rw_in_block + i < length_in_block && rw < buffer_size) // read block to buffer
     {
@@ -296,7 +285,6 @@ int read_from_block(int block_num, int rw, char *buffer, int buffer_size) // hel
         rw++;
         i++;
     }
-
     free(block); // free block
     return rw;
 }

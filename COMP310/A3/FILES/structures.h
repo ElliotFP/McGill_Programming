@@ -98,4 +98,8 @@ void f_setRW(int inode, int newrw);
 void f_incdecRW(int inode, int incdec); // Increment or decrement the read/write position
 void f_deactivate(int inode);			// Deactivate a file descriptor
 
+struct block
+{
+	char data[BLOCKSIZE_]; // Size of a block
+};
 #endif

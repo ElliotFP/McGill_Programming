@@ -13,7 +13,7 @@ int sfs_fopen(char *);
 
 int sfs_fclose(int);
 
-int write_to_block(int, int, const char *);
+int write_to_block(int, int, const char *, int);
 
 int sfs_fwrite(int, const char *, int);
 

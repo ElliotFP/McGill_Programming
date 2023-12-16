@@ -145,7 +145,7 @@ directory *d_init(int maxEntries) // Initialize the directory structure
     ic->i[DIR_INODE_].pointers[0] = freebit; // first data block
 
     // write to disk
-    write_blocks(freebit + FIRST_DATABLOCK_, 1, (void *)d);
+    write_blocks(freebit + DATA_BLOCKS_AVAIL_, 1, (void *)d);
     return d;
 }
 
