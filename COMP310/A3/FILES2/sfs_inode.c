@@ -38,7 +38,7 @@ int init_superblock(int fresh)
 /*------------------------------------------------------------------*/
 /* Gets the inode number corresponding to the file name             */
 /*------------------------------------------------------------------*/
-int filename_to_inode_num(char *name, int check_root_dir)
+int i_fname_to_num(char *name, int check_root_dir)
 {
     // Check the directory cache
     for (int i = 0; i < max_dir_len; i++)
@@ -77,7 +77,7 @@ int filename_to_inode_num(char *name, int check_root_dir)
 /*------------------------------------------------------------------*/
 /* Gets the inode entry corresponding to the inode number           */
 /*------------------------------------------------------------------*/
-struct inode get_inode(int inode_number)
+struct inode i_get_inode(int inode_number)
 {
     // Get the block number
     int block_number = ((int)inode_number / num_of_inodes_per_block) + 1;
@@ -96,7 +96,7 @@ struct inode get_inode(int inode_number)
 /*------------------------------------------------------------------*/
 /* Updates the inode entry corresponding to the inode number        */
 /*------------------------------------------------------------------*/
-int update_inode(int inode_number, struct inode inode)
+int i_update_inode(int inode_number, struct inode inode)
 {
     // Get the block number
     int block_number = ((int)inode_number / num_of_inodes_per_block) + 1;
@@ -119,7 +119,7 @@ int update_inode(int inode_number, struct inode inode)
 /*------------------------------------------------------------------*/
 /* Gets the next free inode number                                  */
 /*------------------------------------------------------------------*/
-int get_free_inode_num()
+int i_get_free_inode()
 {
     // Check if there is space in the inode table
     for (int i = 1; i < num_of_inodes; i++)
@@ -144,12 +144,12 @@ int get_free_inode_num()
 /*------------------------------------------------------------------*/
 /* Initializes the root inode                                       */
 /*------------------------------------------------------------------*/
-int init_root_inode(int fresh)
+int i_init_root_inode(int fresh)
 {
     printf("Initializing root inode\n");
     // Get the root inode
     root_inode = (struct inode *)calloc(1, sizeof(struct inode));
-    *root_inode = get_inode(root_inode_num);
+    *root_inode = i_get_inode(root_inode_num);
     if (fresh)
     {
         // Set the size to 0
@@ -165,12 +165,12 @@ int init_root_inode(int fresh)
         root_inode->indirect = -1;
 
         // Write the root inode to disk
-        update_inode(root_inode_num, *root_inode);
+        i_update_inode(root_inode_num, *root_inode);
     }
     else
     {
         // Remove the inode pages to the free bitmap
-        remove_inode_blocks_from_fbm(*root_inode);
+        i_remove_inode_blocks_from_fbm(*root_inode);
     }
     return 0;
 }
@@ -179,7 +179,7 @@ int init_root_inode(int fresh)
 /* Checks if the inode link is a valid data block, and if not,      */
 /* gets a free block and adds it to the inode                       */
 /*------------------------------------------------------------------*/
-int check_inode_link(struct inode inode, int link_index)
+int i_check_link(struct inode inode, int link_index)
 {
     // Check if the link is a valid indirect block
     if (link_index > 11 && link_index < 12 + max_ints_in_block)
@@ -225,7 +225,7 @@ int check_inode_link(struct inode inode, int link_index)
         }
         // Link the data block to the inode
         inode.direct[link_index] = block_num;
-        // update_inode(root_inode_num, inode);
+        // i_update_inode(root_inode_num, inode);
     }
     return inode.direct[link_index];
 }
@@ -233,16 +233,16 @@ int check_inode_link(struct inode inode, int link_index)
 /*------------------------------------------------------------------*/
 /* Creates an inode                                                 */
 /*------------------------------------------------------------------*/
-void create_inode(int inode_number, char *name)
+void i_create_inode(int inode_number, char *name)
 {
-    struct inode inode = get_inode(inode_number);
+    struct inode inode = i_get_inode(inode_number);
     inode.size = 0;
     for (int i = 0; i < 12; i++)
     {
         inode.direct[i] = -1;
     }
     inode.indirect = -1;
-    update_inode(inode_number, inode);
+    i_update_inode(inode_number, inode);
 
     // Add the file to a directory block entry
     for (int i = 0; i < 12; i++)
@@ -276,7 +276,7 @@ void create_inode(int inode_number, char *name)
             }
             // Link the data block to the root inode
             root_inode->direct[i] = block_num;
-            update_inode(root_inode_num, *root_inode);
+            i_update_inode(root_inode_num, *root_inode);
             // Create the directory block
             struct directory_block *dir_block = (struct directory_block *)calloc(1, sizeof(struct block));
             // Add the file to the directory block
@@ -294,11 +294,11 @@ void create_inode(int inode_number, char *name)
 /*------------------------------------------------------------------*/
 /* Removes an inode from the directory table                        */
 /*------------------------------------------------------------------*/
-void remove_inode(int inode_number)
+void i_remove_inode(int inode_number)
 {
     // Add the linked inode blocks from the free bitmap
-    struct inode inode = get_inode(inode_number);
-    add_inode_blocks_to_fbm(inode);
+    struct inode inode = i_get_inode(inode_number);
+    i_add_blocks_to_fbm(inode);
 
     // Remove the file from the directory table
     for (int i = 0; i < 12; i++)
@@ -326,7 +326,7 @@ void remove_inode(int inode_number)
 /*------------------------------------------------------------------*/
 /* Adds the inode pages to the free bitmap                          */
 /*------------------------------------------------------------------*/
-int add_inode_blocks_to_fbm(struct inode inode)
+int i_add_blocks_to_fbm(struct inode inode)
 {
     // Check direct blocks
     for (int i = 0; i < 12; i++)
@@ -357,7 +357,7 @@ int add_inode_blocks_to_fbm(struct inode inode)
 /*------------------------------------------------------------------*/
 /* Removes the inode pages from the free bitmap                     */
 /*------------------------------------------------------------------*/
-int remove_inode_blocks_from_fbm(struct inode inode)
+int i_remove_inode_blocks_from_fbm(struct inode inode)
 {
     // Check direct blocks
     for (int i = 0; i < 12; i++)
@@ -425,7 +425,7 @@ int init_bitmap(int fresh)
 /*------------------------------------------------------------------*/
 /* Writes data into a data block                                    */
 /*------------------------------------------------------------------*/
-int write_into_data_block(int block_number, int offset, const char *buffer, int size)
+int write_to_block(int block_number, int offset, const char *buffer, int size) // write data into a data block
 {
     // Read the block
     struct block *block = (struct block *)calloc(1, sizeof(struct block));
@@ -440,7 +440,7 @@ int write_into_data_block(int block_number, int offset, const char *buffer, int 
 /*------------------------------------------------------------------*/
 /* Writes data into an indirect data block                          */
 /*------------------------------------------------------------------*/
-int write_into_indirect_data_block(int ind_block_num, int block_index, int offset, const char *buffer, int size)
+int write_to_indirect(int ind_block_num, int block_index, int offset, const char *buffer, int size)
 {
     // Read the indirect block
     struct indirect_block *ind_block = (struct indirect_block *)calloc(1, sizeof(struct block));
@@ -462,14 +462,14 @@ int write_into_indirect_data_block(int ind_block_num, int block_index, int offse
     }
 
     // Write the data into the data block
-    write_into_data_block(ind_block->entries[block_index], offset, buffer, size);
+    write_to_block(ind_block->entries[block_index], offset, buffer, size);
     return 0;
 }
 
 /*------------------------------------------------------------------*/
 /* Reads data from a data block                                     */
 /*------------------------------------------------------------------*/
-int read_from_data_block(int block_number, int offset, char *buffer, int size)
+int read_from_block(int block_number, int offset, char *buffer, int size)
 {
     // Read the block
     struct block *block = (struct block *)calloc(1, sizeof(struct block));
@@ -482,7 +482,7 @@ int read_from_data_block(int block_number, int offset, char *buffer, int size)
 /*------------------------------------------------------------------*/
 /* Reads data from an indirect data block                           */
 /*------------------------------------------------------------------*/
-int read_from_indirect_data_block(int ind_block_num, int block_index, int offset, char *buffer, int size)
+int read_from_indirect(int ind_block_num, int block_index, int offset, char *buffer, int size)
 {
     // Read the indirect block
     struct indirect_block *ind_block = (struct indirect_block *)calloc(1, sizeof(struct block));
@@ -494,14 +494,14 @@ int read_from_indirect_data_block(int ind_block_num, int block_index, int offset
         return -1;
     }
     // Read the data from the data block
-    read_from_data_block(ind_block->entries[block_index], offset, buffer, size);
+    read_from_block(ind_block->entries[block_index], offset, buffer, size);
     return 0;
 }
 
 /*------------------------------------------------------------------*/
 /* Get the next free entry in the directory cache                   */
 /*------------------------------------------------------------------*/
-int get_free_dir_cache_entry()
+int d_get_free_entry()
 {
     for (int i = 0; i < max_dir_len; i++)
     {
@@ -519,7 +519,7 @@ int get_free_dir_cache_entry()
 int init_dir_cache()
 {
     // Get root inode
-    struct inode root_inode = get_inode(root_inode_num);
+    struct inode root_inode = i_get_inode(root_inode_num);
 
     // Check all direct blocks
     for (int i = 0; i < 12; i++)
@@ -535,7 +535,7 @@ int init_dir_cache()
                 if (block->entries[j].valid == 1)
                 {
                     // Add file to directory cache
-                    int free_entry_index = get_free_dir_cache_entry();
+                    int free_entry_index = d_get_free_entry();
                     dir_cache[free_entry_index] = block->entries[j];
                 }
             }
@@ -559,7 +559,7 @@ int init_fdt()
 /*------------------------------------------------------------------*/
 /* Get the next free entry in the file descriptor table             */
 /*------------------------------------------------------------------*/
-int get_free_fdt_entry()
+int f_get_free_entry()
 {
     for (int i = 0; i < max_open_files; i++)
     {
@@ -574,11 +574,11 @@ int get_free_fdt_entry()
 /*------------------------------------------------------------------*/
 /* Add enrty to fdt using file inode                                */
 /*------------------------------------------------------------------*/
-int add_to_fdt(int inode_num)
+int f_add(int inode_num)
 {
     printf("Adding file to fdt\n");
     printf("inode_num: %d\n", inode_num);
-    struct inode inode = get_inode(inode_num);
+    struct inode inode = i_get_inode(inode_num);
     // Check if the inode is already in fdt
     for (int i = 0; i < max_open_files; i++)
     {
@@ -589,7 +589,7 @@ int add_to_fdt(int inode_num)
         }
     }
     // Check if there is enough space in the fdt
-    int fdt_num = get_free_fdt_entry();
+    int fdt_num = f_get_free_entry();
     if (fdt_num == -1)
     {
         // If there is no space, exit

@@ -1,3 +1,7 @@
+
+#include "constants.h"
+
+/* INode */
 struct inode
 {
     int size;
@@ -5,15 +9,23 @@ struct inode
     int indirect;
 };
 
-struct indirect_block
-{
-    int entries[256];
-};
-
 struct inode_block
 {
-    struct inode inodes[18];
+    struct inode inodes[num_of_inodes_per_block];
 };
+
+int i_fname_to_num(char *name, int check_root_dir);       // check_root_dir = 1 if we want to check the root directory
+struct inode i_get_inode(int inode_number);               // Returns the inode with the given inode number
+int i_update_inode(int inode_number, struct inode inode); // Updates the inode with the given inode number
+int i_get_free_inode();                                   // Returns the inode number of the next free inode
+int i_init_root_inode(int fresh);                         // Initializes the root inode
+int i_check_link(struct inode inode, int link_index);     // Returns 1 if the link is valid, 0 otherwise
+void i_create_inode(int inode_number, char *name);        // Creates an inode with the given inode number and name
+void i_remove_inode(int inode_number);                    // Removes the inode with the given inode number
+int i_add_blocks_to_fbm(struct inode inode);              // Adds the blocks of the given inode to the free bitmap
+int i_remove_inode_blocks_from_fbm(struct inode inode);
+
+/* Superblock */
 
 struct superblock
 {
@@ -24,18 +36,19 @@ struct superblock
     int root_inode;
 };
 
-struct block
-{
-    char data[1024]; // Size of a block
-};
+int init_superblock(int); // Initializes the superblock
 
 struct free_bitmap
 {
     char bits[994]; // Number of data blocks
 };
 
-struct inode *root_inode;
-struct free_bitmap *bitmap;
+struct free_bitmap *bitmap; // Pointer to the free bitmap
+
+int get_next_free_block();  // Returns the index of the next free block
+int init_bitmap(int fresh); // Initializes the free bitmap
+
+/* Directory */
 
 struct directory_entry
 {
@@ -49,6 +62,14 @@ struct directory_block
     struct directory_entry entries[42];
 };
 
+struct inode *root_inode;                      // Pointer to the root inode
+struct directory_entry dir_cache[max_dir_len]; // Directory cache
+
+int d_get_free_entry(); // Returns the index of the next free directory cache entry
+int init_dir_cache();   // Initializes the directory cache
+
+/* File Descriptor Table */
+
 struct fdt_entry
 {
     int valid;
@@ -56,36 +77,25 @@ struct fdt_entry
     int inode;
     int rw_ptr;
 };
+struct fdt_entry fdt[max_open_files];
 
-struct fdt_entry fdt[300];
+int init_fdt();           // Initializes the file descriptor table
+int f_get_free_entry();   // Returns the index of the next free file descriptor table entry
+int f_add(int inode_num); // Adds the file with the given inode number to the file descriptor table
 
-struct directory_entry dir_cache[500];
+struct indirect_block
+{
+    int entries[max_ints_in_block];
+};
+struct block
+{
+    char data[block_size_]; // Size of a block
+};
 
-int get_free_dir_cache_entry();
-int init_dir_cache();
+// helper functions for writing to blocks
+int write_to_block(int block_number, int offset, const char *buffer, int size);
+int write_to_indirect(int ind_block_num, int block_index, int offset, const char *buffer, int size);
 
-int init_fdt();
-int get_free_fdt_entry();
-int add_to_fdt(int inode_num);
-
-int init_superblock(int);
-
-int filename_to_inode_num(char *name, int check_root_dir);
-struct inode get_inode(int inode_number);
-int update_inode(int inode_number, struct inode inode);
-int get_free_inode_num();
-int init_root_inode(int fresh);
-int check_inode_link(struct inode inode, int link_index);
-void create_inode(int inode_number, char *name);
-void remove_inode(int inode_number);
-
-int add_inode_blocks_to_fbm(struct inode inode);
-int remove_inode_blocks_from_fbm(struct inode inode);
-int get_next_free_block();
-int init_bitmap(int fresh);
-
-int write_into_data_block(int block_number, int offset, const char *buffer, int size);
-int write_into_indirect_data_block(int ind_block_num, int block_index, int offset, const char *buffer, int size);
-
-int read_from_data_block(int block_number, int offset, char *buffer, int size);
-int read_from_indirect_data_block(int ind_block_num, int block_index, int offset, char *buffer, int size);
+// helper functions for reading from blocks
+int read_from_block(int block_number, int offset, char *buffer, int size);
+int read_from_indirect(int ind_block_num, int block_index, int offset, char *buffer, int size);

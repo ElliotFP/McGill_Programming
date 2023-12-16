@@ -18,10 +18,9 @@ int root_inode_num;
 /* This function creates a new file system or loads an existing one */
 void mksfs(int fresh)
 {
-    printf("\n");
     // Initialize variables calculated at runtime
-    data_block_start = (int)ceil(1 + (num_of_inodes / num_of_inodes_per_block));
-    num_of_data_blocks = max_blocks - data_block_start - 1; // -1 for free bitmap block
+    data_block_start = (int)ceil(1 + (num_of_inodes / num_of_inodes_per_block)); // +1 for superblock
+    num_of_data_blocks = max_blocks - data_block_start - 1;                      // -1 for free bitmap block
 
     if (fresh)
     {
@@ -37,43 +36,43 @@ void mksfs(int fresh)
     // Initialize all the datastructures
     init_bitmap(fresh);
     init_superblock(fresh);
-    init_root_inode(fresh);
+    i_init_root_inode(fresh);
     init_dir_cache();
     init_fdt();
 
     printf("mksfs finished\n");
 }
 
-/*------------------------------------------------------------------*/
-/* Get the name of the next file in the directory                   */
-/*------------------------------------------------------------------*/
+/* --------------------- */
+/* sfs_getnextfilename() */
+/* --------------------- */
+/* This function returns the next filename in the directory */
 int sfs_getnextfilename(char *fname)
 {
-    // Copy the name of the next file in the directory into fname.
-
-    // Return 0 if there are no more files in the directory, otherwise return 1.
     return 0;
 }
 
-/*------------------------------------------------------------------*/
-/* Get the size of the given file                                   */
-/*------------------------------------------------------------------*/
+/* ----------------- */
+/* sfs_getfilesize() */
+/* ----------------- */
+/* This function returns the size of a file */
 int sfs_getfilesize(const char *path)
 {
     // Return the size of the given file.
-    int inode_num = filename_to_inode_num(path, 1);
+    int inode_num = i_fname_to_num(path, 1);
     if (inode_num == -1)
     {
         printf("File not found\n");
         return -1;
     }
-    struct inode inode = get_inode(inode_num);
+    struct inode inode = i_get_inode(inode_num);
     return inode.size;
 }
 
-/*------------------------------------------------------------------*/
-/* Open the given file                                              */
-/*------------------------------------------------------------------*/
+/* ----------- */
+/* sfs_fopen() */
+/* ----------- */
+/* This function opens a file */
 int sfs_fopen(char *name)
 {
     // Check filename length
@@ -84,12 +83,12 @@ int sfs_fopen(char *name)
     }
     // Check if the file exists
     int fdt_num = -1;
-    int inode_num = filename_to_inode_num(name, 1);
+    int inode_num = i_fname_to_num(name, 1);
     if (inode_num == -1)
     {
         printf("File not found\n");
         // Check if there is space in the directory
-        int dir_num = get_free_dir_cache_entry();
+        int dir_num = d_get_free_entry();
         if (dir_num == -1)
         {
             // If there is no space, exit
@@ -98,7 +97,7 @@ int sfs_fopen(char *name)
         }
 
         // Check if there is enough space in the fdt
-        fdt_num = get_free_fdt_entry();
+        fdt_num = f_get_free_entry();
         if (fdt_num == -1)
         {
             // If there is no space, exit
@@ -107,9 +106,9 @@ int sfs_fopen(char *name)
         }
 
         // Get the inode number
-        inode_num = get_free_inode_num();
+        inode_num = i_get_free_inode();
         // Create the inode for the file
-        create_inode(inode_num, name);
+        i_create_inode(inode_num, name);
 
         // Add the file to the directory cache
         dir_cache[dir_num].valid = 1;
@@ -123,15 +122,16 @@ int sfs_fopen(char *name)
     }
     else
     {
-        fdt_num = add_to_fdt(inode_num);
+        fdt_num = f_add(inode_num);
     }
     // Return the file descriptor.
     return fdt_num;
 }
 
-/*------------------------------------------------------------------*/
-/* Close the given file                                             */
-/*------------------------------------------------------------------*/
+/* ------------ */
+/* sfs_fclose() */
+/* ------------ */
+/* This function closes a file */
 int sfs_fclose(int fileID)
 {
     // Check if the file is open
@@ -145,15 +145,16 @@ int sfs_fclose(int fileID)
     return 0;
 }
 
-/*------------------------------------------------------------------*/
-/* Write characters from buf into the file associated with fileID   */
-/*------------------------------------------------------------------*/
+/* ------------ */
+/* sfs_fwrite() */
+/* ------------ */
+/* This function writes to a file */
 int sfs_fwrite(int fileID, const char *buf, int length)
 {
     int initial_length = length;
     // Get the file's inode and rw_pointer position
     int inode_num = fdt[fileID].inode;
-    struct inode inode = get_inode(inode_num);
+    struct inode inode = i_get_inode(inode_num);
     int rw_ptr = fdt[fileID].rw_ptr;
 
     // Write loop
@@ -179,23 +180,23 @@ int sfs_fwrite(int fileID, const char *buf, int length)
         // Check if inode link is a valid data block
         if (inode_link_index > 11)
         {
-            inode.indirect = check_inode_link(inode, inode_link_index);
+            inode.indirect = i_check_link(inode, inode_link_index);
             if (inode.indirect == -1)
             { // No space left on disk
                 break;
             }
             // Write the data
-            write_into_indirect_data_block(inode.indirect, inode_link_index - 12, block_offset, buf, write_length);
+            write_to_indirect(inode.indirect, inode_link_index - 12, block_offset, buf, write_length);
         }
         else
         {
-            inode.direct[inode_link_index] = check_inode_link(inode, inode_link_index);
+            inode.direct[inode_link_index] = i_check_link(inode, inode_link_index);
             if (inode.direct[inode_link_index] == -1)
             { // No space left on disk
                 break;
             }
             // Write the data
-            write_into_data_block(inode.direct[inode_link_index], block_offset, buf, write_length);
+            write_to_block(inode.direct[inode_link_index], block_offset, buf, write_length);
         }
         length -= write_length;
         rw_ptr += write_length;
@@ -203,7 +204,7 @@ int sfs_fwrite(int fileID, const char *buf, int length)
         if (rw_ptr > inode.size)
             inode.size = rw_ptr;
 
-        update_inode(inode_num, inode);
+        i_update_inode(inode_num, inode);
     }
     // Perform FDT updates
     fdt[fileID].rw_ptr = rw_ptr;
@@ -211,15 +212,16 @@ int sfs_fwrite(int fileID, const char *buf, int length)
     return initial_length - length;
 }
 
-/*------------------------------------------------------------------*/
-/* Read characters from the file associated with fileID into buf    */
-/*------------------------------------------------------------------*/
+/* ----------- */
+/* sfs_fread() */
+/* ----------- */
+/* This function reads from a file */
 int sfs_fread(int fileID, char *buf, int length)
 {
     int initial_length = length;
     // Get the file's inode and rw_pointer position
     int inode_num = fdt[fileID].inode;
-    struct inode inode = get_inode(inode_num);
+    struct inode inode = i_get_inode(inode_num);
     int rw_ptr = fdt[fileID].rw_ptr;
     int file_size = inode.size;
 
@@ -243,11 +245,11 @@ int sfs_fread(int fileID, char *buf, int length)
         // Check if inode link is a valid data block
         if (inode_link_index > 11)
         {
-            read_from_indirect_data_block(inode.indirect, inode_link_index - 12, block_offset, buf, read_length);
+            read_from_indirect(inode.indirect, inode_link_index - 12, block_offset, buf, read_length);
         }
         else
         {
-            read_from_data_block(inode.direct[inode_link_index], block_offset, buf, read_length);
+            read_from_block(inode.direct[inode_link_index], block_offset, buf, read_length);
         }
         length -= read_length;
         rw_ptr += read_length;
@@ -258,10 +260,10 @@ int sfs_fread(int fileID, char *buf, int length)
     return initial_length - length;
 }
 
-/*------------------------------------------------------------------*/
-/* Set the current position of the file pointer associated with     */
-/* fileID to loc                                                    */
-/*------------------------------------------------------------------*/
+/* ----------- */
+/* sfs_fseek() */
+/* ----------- */
+/* This function seeks to a position in a file */
 int sfs_fseek(int fileID, int loc)
 {
     // Get the file's rw_pointer position
@@ -284,9 +286,10 @@ int sfs_fseek(int fileID, int loc)
     return 0;
 }
 
-/*------------------------------------------------------------------*/
-/* Remove the file with the given name from the file system         */
-/*------------------------------------------------------------------*/
+/* ------------ */
+/* sfs_remove() */
+/* ------------ */
+/* This function removes a file */
 int sfs_remove(char *file)
 {
     // Get the inode number of the file
@@ -306,7 +309,7 @@ int sfs_remove(char *file)
                 }
             }
             // Remove the file from the inode table
-            remove_inode(inode_num);
+            i_remove_inode(inode_num);
 
             // Return 0 on success, otherwise return -1
             return 0;
