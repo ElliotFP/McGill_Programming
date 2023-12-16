@@ -220,7 +220,15 @@ int sfs_fwrite(int fd, const char *buffer, int length)
 
     while (rw < new_length && bytes_written < size_of_data) // write buffer to file
     {
-        printf("Writing to block %d, rw in block %d\n", rw_in_block, block_num);
+        // print all variables
+        printf("rw: %d ", rw);
+        printf("rw_in_block: %d ", rw_in_block);
+        printf("block_num: %d ", block_num);
+        printf("bytes_written: %d ", bytes_written);
+        printf("start: %d ", start);
+        printf("buffer: '%s' ", buffer);
+        printf("size_of_ data: %d\n", size_of_data);
+
         rw_in_block = write_to_block(ic->i[inode_num].pointers[block_num], rw_in_block, buffer); // write to block
 
         if (rw == -1)
